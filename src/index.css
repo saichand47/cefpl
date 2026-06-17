@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #ffffff;
+  --color-bg-alt: #f8fafc;
+  --color-text-main: #181d26;
+  --color-text-secondary: #333333;
+  --color-text-muted: rgba(4, 14, 32, 0.69);
+  --color-border: #e0e2e6;
+  --color-accent: #1b61c9;
+  --color-accent-hover: #154e9e;
+  
+  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
+  
+  --shadow-airtable: rgba(0, 0, 0, 0.32) 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 0px 2px, rgba(45, 127, 249, 0.28) 0px 1px 3px, rgba(0, 0, 0, 0.06) 0px 0px 0px 0.5px inset;
+  --shadow-soft: rgba(15, 48, 106, 0.05) 0px 0px 20px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.text-display {
+  letter-spacing: 0.1px;
+}
+
+.text-body {
+  letter-spacing: 0.18px;
+}
+
+.text-button {
+  letter-spacing: 0.08px;
+}
+
+.section-alt {
+  background-color: var(--color-bg-alt);
+}
+
+.border-airtable {
+  border: 1px solid var(--color-border);
+}
+
+.shadow-airtable {
+  box-shadow: var(--shadow-airtable);
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+/* Terminal: forecast confidence band — very slow breathing */
+@keyframes band-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.confidence-band { animation: band-breathe 9s ease-in-out infinite; }

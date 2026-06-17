@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vercel env *)",
+      "Bash(node -e ' *)",
+      "Bash(vercel logs *)",
+      "Bash(npm run *)",
+      "WebFetch(domain:cefpl.in)",
+      "mcp__ca20f79d-3ebe-4844-bf75-f3f8e226d73e__list_teams",
+      "mcp__99d0e382-7161-42bf-97f4-efa0ae35ae72__list_projects",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "mcp__ca20f79d-3ebe-4844-bf75-f3f8e226d73e__list_deployments",
+      "mcp__99d0e382-7161-42bf-97f4-efa0ae35ae72__list_tables",
+      "mcp__99d0e382-7161-42bf-97f4-efa0ae35ae72__get_advisors",
+      "WebFetch(domain:api.cefpl.in)",
+      "mcp__Claude_in_Chrome__resize_window",
+      "Bash(git config *)",
+      "Bash(command -v gh)",
+      "Bash(git init *)",
+      "Bash(git branch *)",
+      "Bash(git add *)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}
