@@ -76,6 +76,7 @@ export default function Layout({
   handleLogout
 }) {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[var(--color-bg)] font-sans text-[var(--color-text-main)] overflow-hidden flex flex-col">
       {/* NAVIGATION */}
@@ -137,8 +138,51 @@ export default function Layout({
                 Portal Login
               </button>
             )}
+            {/* Mobile menu toggle — gives small screens access to the nav links
+                that are hidden below the sm breakpoint. */}
+            <button
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              className="sm:hidden inline-flex h-10 w-10 items-center justify-center rounded-[8px] text-[var(--color-text-muted)] hover:bg-gray-50 hover:text-[var(--color-text-main)] cursor-pointer"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                {mobileMenuOpen
+                  ? <path d="M18 6L6 18M6 6l12 12" />
+                  : <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>}
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* MOBILE MENU */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-[var(--color-border)] bg-white px-6 py-3">
+            <a
+              href="/#platform"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-[8px] px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-gray-50 hover:text-[var(--color-text-main)]"
+            >
+              Platform
+            </a>
+            <Link
+              to="/forecast"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-[8px] px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-gray-50 hover:text-[var(--color-text-main)]"
+            >
+              Live Forecast
+            </Link>
+            {user && (
+              <Link
+                to="/app"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-[8px] px-3 py-2.5 text-sm font-semibold text-[var(--color-accent)] hover:bg-gray-50"
+              >
+                Open Portal
+              </Link>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* LOGIN MODAL */}

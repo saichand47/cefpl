@@ -9,15 +9,28 @@ const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000
 
 function LiveMarketStrip() {
   const [data, setData] = useState(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/forecast`)
       .then((r) => (r.ok ? r.json() : null))
-      .then(setData)
-      .catch(() => setData(null));
+      .then((d) => (d ? setData(d) : setFailed(true)))
+      .catch(() => setFailed(true));
   }, []);
 
-  if (!data) return null;
+  // While the (free-tier, sometimes-asleep) API responds, show a skeleton so
+  // the hero never renders an empty gap. If it ultimately fails, render nothing.
+  if (!data) {
+    if (failed) return null;
+    return (
+      <div className="inline-flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-6 py-3 shadow-sm">
+        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400" />
+        <span className="h-3.5 w-40 animate-pulse rounded bg-gray-200" />
+        <span className="h-3.5 w-20 animate-pulse rounded bg-gray-100" />
+        <span className="h-3.5 w-20 animate-pulse rounded bg-gray-100" />
+      </div>
+    );
+  }
 
   const fmt = (n) => (n == null ? '--' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: 1 }));
   const d14 = data.forecast?.['14_day'];
@@ -73,24 +86,36 @@ export default function LandingPage() {
     },
   };
 
+  // Hero is above the fold: keep content fully opaque and only slide it, so a
+  // slow first paint never shows a blank/greyed-out headline before the
+  // animation runs.
+  const heroContainer = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.08 } },
+  };
+  const heroItem = {
+    hidden: { opacity: 1, y: 14 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+  };
+
   return (
     <>
       {/* HERO */}
       <section className="pt-44 pb-20 px-6 relative z-10 bg-[var(--color-bg-alt)] border-b border-[var(--color-border)] overflow-hidden">
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[700px] h-[700px] bg-white rounded-full opacity-60 blur-3xl pointer-events-none"></div>
         <MotionDiv
-          initial="hidden" animate="visible" variants={staggerContainer}
+          initial="hidden" animate="visible" variants={heroContainer}
           className="max-w-4xl mx-auto text-center space-y-7 relative z-10"
         >
-          <MotionDiv variants={slideUp}>
+          <MotionDiv variants={heroItem}>
             <h1 className="font-bold text-5xl md:text-6xl text-display leading-tight">
               Chatrapati Egg Farms
             </h1>
           </MotionDiv>
-          <MotionDiv variants={slideUp}>
+          <MotionDiv variants={heroItem}>
             <LiveMarketStrip />
           </MotionDiv>
-          <MotionDiv variants={slideUp}>
+          <MotionDiv variants={heroItem}>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/forecast"

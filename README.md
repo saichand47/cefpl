@@ -1,16 +1,72 @@
-# React + Vite
+# EggSight — Chatrapati Egg Farms frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The customer-facing web app for **Chatrapati Egg Farms Pvt Ltd (CEFPL)**, live at
+[cefpl.in](https://cefpl.in). It pairs a public marketing/forecast site with an
+authenticated team portal ("EggSight") for the Solapur layer-farming operation.
 
-Currently, two official plugins are available:
+## What's here
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Landing page** — company intro, platform module overview, live NECC price strip.
+- **Live Forecast** (`/forecast`) — public Hyderabad egg-price forecast (1/7/14-day)
+  with model reasoning, pulled from the EggSight API.
+- **Team portal** (`/app`, login required) — market intelligence dashboard,
+  raw-material (feed) cost tracking, and a grounded AI Market Analyst.
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| | |
+|---|---|
+| Framework | React 19 + React Router 7 |
+| Build | Vite |
+| Styling | Tailwind CSS 4 (theme tokens in `src/index.css`) |
+| Animation | Framer Motion |
+| Auth + DB | Supabase (`@supabase/supabase-js`) |
+| Forecast API | FastAPI service at `api.cefpl.in` (separate `EggSight` repo) |
+| Hosting | Vercel |
 
-## Expanding the ESLint configuration
+## Local development
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+cp .env.example .env   # then fill in the values
+npm run dev            # http://localhost:5173
+```
+
+### Environment variables
+
+All are build-time, browser-exposed (Vite inlines `VITE_*`). Use public keys only.
+See [.env.example](.env.example):
+
+| Variable | Purpose |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL (auth + portal data) |
+| `VITE_SUPABASE_ANON_KEY` | Supabase public anon key |
+| `VITE_EGGSIGHT_API_URL` | Forecast API base URL (e.g. `https://api.cefpl.in`) |
+
+If the Supabase vars are missing the app still boots, but logs a console warning
+and auth/portal features won't work.
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the Vite dev server |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint |
+
+## Architecture
+
+- **Routes** are defined in `src/App.jsx`. Public routes render inside
+  `src/components/Layout.jsx`; the portal renders inside
+  `src/pages/app/AppShell.jsx` (which redirects to `/` when signed out).
+- **Auth** is Supabase email/password, gated by a server-side allowlist
+  (`allowed_emails`) enforced by a signup trigger in the database.
+- **Data**: the public forecast and portal dashboards fetch from the EggSight
+  API; feed-cost entries read/write Supabase directly (RLS-protected).
+
+## Deployment
+
+Hosted on Vercel. `vercel.json` rewrites all routes to `index.html` for SPA
+client-side routing. Set the environment variables above in the Vercel project
+settings (Production + Preview).
