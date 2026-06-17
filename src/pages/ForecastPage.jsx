@@ -35,46 +35,126 @@ function getSignalStyles(signal) {
   };
 }
 
-function ForecastChart({ history }) {
-  const points = useMemo(() => {
-    if (!history?.length) return [];
+const HISTORY_RANGES = [
+  { k: '30D', days: 30 },
+  { k: '90D', days: 90 },
+  { k: '6M', days: 180 },
+  { k: '1Y', days: 365 },
+];
 
-    const prices = history.map((item) => Number(item.price));
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const range = max - min || 1;
+const _MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const _fmtAxisDate = (s) => {
+  const [y, m, d] = s.split('-');
+  return `${parseInt(d, 10)} ${_MONTHS[parseInt(m, 10) - 1]} '${y.slice(2)}`;
+};
 
-    return history.map((item, index) => {
-      const x = history.length === 1 ? 0 : (index / (history.length - 1)) * 100;
-      const y = 100 - ((Number(item.price) - min) / range) * 78 - 10;
-      return { ...item, x, y };
-    });
-  }, [history]);
+const CW = 720, CH = 300, CPAD = { l: 46, r: 14, t: 14, b: 26 };
 
-  const line = points.map((point) => `${point.x},${point.y}`).join(' ');
+function PriceHistoryChart({ apiBase }) {
+  const [range, setRange] = useState(30);
+  // Track which range the loaded rows belong to so `loading` can be derived
+  // (avoids calling setState synchronously inside the effect).
+  const [loaded, setLoaded] = useState({ range: null, rows: null });
+  const [hover, setHover] = useState(null); // index into series
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${apiBase}/history/Hyderabad?days=${range}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active) setLoaded({ range, rows: d?.data || [] }); })
+      .catch(() => { if (active) setLoaded({ range, rows: [] }); });
+    return () => { active = false; };
+  }, [apiBase, range]);
+
+  const loading = loaded.range !== range;
+  const data = loaded.rows;
+
+  const geo = useMemo(() => {
+    const series = data || [];
+    if (series.length < 2) return { series, ready: false };
+    const prices = series.map((d) => Number(d.price));
+    const minP = Math.min(...prices), maxP = Math.max(...prices);
+    const pad = (maxP - minP) * 0.08 || 1;
+    const lo = minP - pad, hi = maxP + pad;
+    const x = (i) => CPAD.l + (i / (series.length - 1)) * (CW - CPAD.l - CPAD.r);
+    const y = (v) => CPAD.t + (1 - (v - lo) / (hi - lo)) * (CH - CPAD.t - CPAD.b);
+    const linePath = series.map((d, i) => `${i ? 'L' : 'M'}${x(i)},${y(d.price)}`).join('');
+    const areaPath = `${linePath}L${x(series.length - 1)},${CH - CPAD.b}L${x(0)},${CH - CPAD.b}Z`;
+    return { series, ready: true, lo, hi, x, y, linePath, areaPath };
+  }, [data]);
+
+  const onMove = (e) => {
+    if (!geo.ready) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - rect.left) / rect.width) * CW;
+    const i = Math.round(((px - CPAD.l) / (CW - CPAD.l - CPAD.r)) * (geo.series.length - 1));
+    setHover(i >= 0 && i < geo.series.length ? i : null);
+  };
+
+  const gridN = 4;
 
   return (
-    <div className="h-72 rounded-[8px] border border-[var(--color-border)] bg-white p-4">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full overflow-visible">
-        <defs>
-          <linearGradient id="forecastFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#1b61c9" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#1b61c9" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[20, 40, 60, 80].map((y) => (
-          <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#e0e2e6" strokeWidth="0.35" />
-        ))}
-        {points.length > 1 && (
-          <>
-            <polygon points={`0,100 ${line} 100,100`} fill="url(#forecastFill)" />
-            <polyline points={line} fill="none" stroke="#1b61c9" strokeWidth="2.2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
-          </>
-        )}
-        {points.map((point) => (
-          <circle key={point.date} cx={point.x} cy={point.y} r="1.4" fill="#1b61c9" vectorEffect="non-scaling-stroke" />
-        ))}
-      </svg>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-display text-xl font-bold text-[var(--color-text-main)]">Price History</h2>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">Hyderabad daily cleaned series · ₹ per 100 eggs</p>
+        </div>
+        <div className="flex rounded-[8px] border border-[var(--color-border)] bg-white">
+          {HISTORY_RANGES.map((r) => (
+            <button
+              key={r.k}
+              onClick={() => { setRange(r.days); setHover(null); }}
+              className={`cursor-pointer px-3 py-1.5 text-[12.5px] font-semibold transition-colors first:rounded-l-[7px] last:rounded-r-[7px] ${range === r.days ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+            >
+              {r.k}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="h-72 animate-pulse rounded-[8px] bg-[var(--color-bg-alt)]" />
+      ) : !geo.ready ? (
+        <div className="flex h-72 items-center justify-center text-sm text-[var(--color-text-muted)]">Not enough data for this range.</div>
+      ) : (
+        <div className="relative">
+          <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full cursor-crosshair" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+            <defs>
+              <linearGradient id="forecastFill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#1b61c9" stopOpacity="0.16" />
+                <stop offset="100%" stopColor="#1b61c9" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {Array.from({ length: gridN + 1 }).map((_, i) => {
+              const v = geo.lo + ((geo.hi - geo.lo) * i) / gridN;
+              return (
+                <g key={i}>
+                  <line x1={CPAD.l} x2={CW - CPAD.r} y1={geo.y(v)} y2={geo.y(v)} stroke="#e5e7eb" strokeWidth="1" />
+                  <text x={CPAD.l - 8} y={geo.y(v) + 3} textAnchor="end" fontSize="11" fill="#9ca3af" className="tabular-nums">{v.toFixed(0)}</text>
+                </g>
+              );
+            })}
+            {[0, Math.floor((geo.series.length - 1) / 2), geo.series.length - 1].map((i) => (
+              <text key={i} x={geo.x(i)} y={CH - 8} textAnchor="middle" fontSize="11" fill="#9ca3af">{_fmtAxisDate(geo.series[i].date)}</text>
+            ))}
+            <path d={geo.areaPath} fill="url(#forecastFill)" />
+            <path d={geo.linePath} fill="none" stroke="#1b61c9" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            {hover != null && (
+              <g>
+                <line x1={geo.x(hover)} x2={geo.x(hover)} y1={CPAD.t} y2={CH - CPAD.b} stroke="#9ca3af" strokeWidth="1" strokeDasharray="3 3" />
+                <circle cx={geo.x(hover)} cy={geo.y(geo.series[hover].price)} r="4" fill="#1b61c9" stroke="#fff" strokeWidth="1.5" />
+              </g>
+            )}
+          </svg>
+          {hover != null && (
+            <div className="pointer-events-none absolute left-3 top-1 rounded-[8px] border border-[var(--color-border)] bg-white px-3 py-1.5 text-[12.5px] shadow-sm">
+              <span className="font-semibold text-[var(--color-text-muted)] tabular-nums">{geo.series[hover].date}</span>
+              <span className="ml-2 font-bold text-[var(--color-text-main)] tabular-nums">₹{Number(geo.series[hover].price).toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -331,13 +411,7 @@ export default function ForecastPage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
             <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-display text-xl font-bold text-[var(--color-text-main)]">30-Day Price History</h2>
-                  <p className="mt-1 text-sm text-[var(--color-text-muted)]">Hyderabad daily cleaned price series</p>
-                </div>
-              </div>
-              <ForecastChart history={forecast?.history || []} />
+              <PriceHistoryChart apiBase={API_BASE} />
             </div>
 
             <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
