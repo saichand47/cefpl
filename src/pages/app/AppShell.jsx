@@ -123,6 +123,7 @@ function CommandPalette({ open, setOpen }) {
 /* ── Shell ───────────────────────────────────────────────────────── */
 const NAV_GROUPS = [
   { heading: 'Market Intelligence', items: [{ to: '/app', end: true, label: 'Dashboard' }] },
+  { heading: 'Commodities', items: [{ to: '/app/feedsight', label: 'Mandi Forecast (FeedSight)' }] },
   { heading: 'Operations', items: [{ to: '/app/raw-materials', label: 'Feed Costs' }] },
   { heading: 'Analysis', items: [{ to: '/app/analyst', label: 'AI Market Analyst' }] },
 ];

@@ -9,6 +9,7 @@ import AppShell from './pages/app/AppShell';
 import MarketDashboard from './pages/app/MarketDashboard';
 import RawMaterials from './pages/app/RawMaterials';
 import MarketAnalyst from './pages/app/MarketAnalyst';
+import FeedSight from './pages/app/FeedSight';
 
 export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -60,6 +61,7 @@ export default function App() {
           element={<AppShell user={user} loading={loading} handleLogout={handleLogout} />}
         >
           <Route index element={<MarketDashboard />} />
+          <Route path="feedsight" element={<FeedSight />} />
           <Route path="raw-materials" element={<RawMaterials />} />
           <Route path="analyst" element={<MarketAnalyst />} />
         </Route>
