@@ -10,6 +10,7 @@ import MarketDashboard from './pages/app/MarketDashboard';
 import RawMaterials from './pages/app/RawMaterials';
 import MarketAnalyst from './pages/app/MarketAnalyst';
 import FeedSight from './pages/app/FeedSight';
+import FeedSightAccuracy from './pages/app/FeedSightAccuracy';
 
 export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -62,6 +63,7 @@ export default function App() {
         >
           <Route index element={<MarketDashboard />} />
           <Route path="feedsight" element={<FeedSight />} />
+          <Route path="feedsight/accuracy" element={<FeedSightAccuracy />} />
           <Route path="raw-materials" element={<RawMaterials />} />
           <Route path="analyst" element={<MarketAnalyst />} />
         </Route>
