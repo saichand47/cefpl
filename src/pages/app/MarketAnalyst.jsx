@@ -44,44 +44,44 @@ export default function MarketAnalyst() {
     <div className="mx-auto flex max-w-[1100px] gap-4">
       {/* Analysis workflows */}
       <aside className="w-60 shrink-0">
-        <div className="rounded-[4px] border border-neutral-200 bg-white">
-          <p className="border-b border-neutral-200 px-3 py-2 text-[10.5px] font-bold uppercase tracking-wider text-neutral-400">
+        <div className="rounded-panel border border-line bg-white">
+          <p className="micro-label border-b border-line px-3 py-2 text-[9.5px] text-text-muted">
             Analysis workflows
           </p>
           <div className="p-1.5">
             {STARTERS.map((s) => (
               <button
                 key={s} onClick={() => ask(s)} disabled={busy}
-                className="block w-full cursor-pointer rounded-[4px] px-2 py-1.5 text-left text-[12.5px] text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-40"
+                className="block w-full cursor-pointer rounded-panel px-2 py-1.5 text-left text-[12.5px] text-text-secondary hover:bg-neutral-100 hover:text-text-main disabled:opacity-40"
               >
                 {s}
               </button>
             ))}
           </div>
         </div>
-        <p className="mt-2 px-1 text-[11px] leading-relaxed text-neutral-400">
+        <p className="mt-2 px-1 text-[11px] leading-relaxed text-text-muted">
           Grounded in live NECC data, the model's forecasts, and 17 years of price history. Verify before trading decisions.
         </p>
       </aside>
 
       {/* Workspace */}
-      <div className="flex min-h-[78vh] flex-1 flex-col rounded-[4px] border border-neutral-200 bg-white">
-        <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2">
+      <div className="flex min-h-[78vh] flex-1 flex-col rounded-panel border border-line bg-white">
+        <div className="flex items-center justify-between border-b border-line px-4 py-2">
           <h1 className="text-[13px] font-bold">AI Market Analyst</h1>
-          <span className="text-[11px] text-neutral-400">Hyderabad NECC · live session data</span>
+          <span className="num text-[10.5px] text-text-muted">HYDERABAD NECC · LIVE SESSION DATA</span>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
           {!entries.length && (
-            <div className="flex h-full items-center justify-center text-[13px] text-neutral-400">
+            <div className="flex h-full items-center justify-center text-[13px] text-text-muted">
               Select an analysis workflow or pose a question below.
             </div>
           )}
           {entries.map((e, i) => (
-            <div key={i} className="border-l-2 border-neutral-200 pl-3">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Query</p>
+            <div key={i} className="border-l-2 border-line pl-3">
+              <p className="micro-label text-[10px] text-text-muted">Query</p>
               <p className="text-[13.5px] font-semibold">{e.q}</p>
-              <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700">Analysis</p>
+              <p className="mt-2 micro-label text-[10px] text-positive">Analysis</p>
               {e.pending ? (
                 <div className="mt-1 space-y-1.5">
                   <div className="h-3 w-4/5 animate-pulse rounded bg-neutral-100" />
@@ -89,9 +89,9 @@ export default function MarketAnalyst() {
                   <div className="h-3 w-2/3 animate-pulse rounded bg-neutral-100" />
                 </div>
               ) : e.error ? (
-                <p className="mt-1 text-[13px] font-medium text-red-600">{e.error}</p>
+                <p className="mt-1 text-[13px] font-medium text-negative">{e.error}</p>
               ) : (
-                <div className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-neutral-800">{e.a}</div>
+                <div className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-text-secondary">{e.a}</div>
               )}
             </div>
           ))}
@@ -100,16 +100,16 @@ export default function MarketAnalyst() {
 
         <form
           onSubmit={(e) => { e.preventDefault(); ask(input); }}
-          className="flex gap-2 border-t border-neutral-200 p-3"
+          className="flex gap-2 border-t border-line p-3"
         >
           <input
             value={input} onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about prices, forecasts, zones, cycles…"
-            className="flex-1 rounded-[4px] border border-neutral-200 px-3 py-2 text-[13px] outline-none focus:border-neutral-400"
+            className="flex-1 rounded-panel border border-line px-3 py-2 text-[13px] outline-none focus:border-accent"
           />
           <button
             type="submit" disabled={busy || !input.trim()}
-            className="cursor-pointer rounded-[4px] bg-emerald-700 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-40"
+            className="cursor-pointer rounded-panel bg-accent px-4 py-2 text-[13px] font-semibold text-white hover:bg-accent-hover active:scale-[0.97] disabled:opacity-40"
           >
             {busy ? 'Analyzing…' : 'Analyze'}
           </button>

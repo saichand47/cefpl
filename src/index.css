@@ -1,19 +1,50 @@
 @import "tailwindcss";
 
+/*
+ * v2 "Unified Instrument" design tokens.
+ * One accent (deep market green), warm paper neutrals, IBM Plex Sans + Mono.
+ * Blue survives only as an informational badge tone; navy is logo/utility bar only.
+ */
 @theme {
-  --color-bg: #ffffff;
-  --color-bg-alt: #f8fafc;
-  --color-text-main: #181d26;
-  --color-text-secondary: #333333;
-  --color-text-muted: rgba(4, 14, 32, 0.69);
-  --color-border: #e0e2e6;
-  --color-accent: #1b61c9;
-  --color-accent-hover: #154e9e;
-  
-  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
-  
-  --shadow-airtable: rgba(0, 0, 0, 0.32) 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 0px 2px, rgba(45, 127, 249, 0.28) 0px 1px 3px, rgba(0, 0, 0, 0.06) 0px 0px 0px 0.5px inset;
-  --shadow-soft: rgba(15, 48, 106, 0.05) 0px 0px 20px;
+  /* Warm paper neutral scale */
+  --color-bg: #fbfaf8;
+  --color-bg-alt: #f8f7f3;
+  --color-surface: #ffffff;
+  --color-ink: #1b1915;
+  --color-text-main: #1b1915;
+  --color-text-secondary: #44403a;
+  --color-text-muted: #6f6a61;
+  --color-border: #e5e2dc;
+  --color-line: #e9e7e1; /* portal hairlines */
+  --color-neutral-100: #f1efe9; /* pill hover */
+
+  /* One accent */
+  --color-accent: #047857;
+  --color-accent-hover: #065f46;
+  --color-positive: #047857;
+  --color-negative: #dc2626;
+  --color-forecast: #059669;
+
+  /* Restricted tones */
+  --color-navy: #000084; /* logo + utility bar only */
+  --color-badge-blue: #1b61c9; /* informational badges only */
+
+  --font-sans: 'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* One radius language */
+  --radius-chip: 4px;
+  --radius-panel: 6px;
+  --radius-card: 8px;
+  --radius-feature: 12px;
+  --radius-modal: 16px;
+
+  /* Neutral, shallow (ink-tinted) elevation — portal uses hairlines, no shadows */
+  --shadow-airtable: rgba(27, 25, 21, 0.22) 0px 0px 1px, rgba(27, 25, 21, 0.06) 0px 1px 2px, rgba(27, 25, 21, 0.08) 0px 2px 6px;
+  --shadow-soft: rgba(27, 25, 21, 0.05) 0px 2px 16px;
+  --shadow-modal: rgba(27, 25, 21, 0.24) 0px 0px 1px, rgba(27, 25, 21, 0.10) 0px 8px 24px, rgba(27, 25, 21, 0.14) 0px 24px 56px;
+
+  --ease-instrument: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html {
@@ -35,15 +66,25 @@ body {
 }
 
 .text-display {
-  letter-spacing: 0.1px;
+  letter-spacing: -0.01em;
 }
 
 .text-body {
-  letter-spacing: 0.18px;
+  letter-spacing: 0.01em;
 }
 
-.text-button {
-  letter-spacing: 0.08px;
+/* Every changing figure: Plex Mono, tabular, capped at weight 600 */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Uppercase micro-label register */
+.micro-label {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .section-alt {
@@ -62,6 +103,53 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
+/* ── Motion: live instrument, never decoration ─────────────────────── */
+
+/* Ticker crawl over a duplicated sequence; paused on hover */
+@keyframes ticker-crawl {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: inline-flex;
+  animation: ticker-crawl 40s linear infinite;
+  will-change: transform;
+}
+.ticker-viewport:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+/* Chart draw-on: pathLength=1 dash sweep */
+@keyframes draw-on {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.draw-on {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-on 1.2s var(--ease-instrument) forwards;
+}
+
+/* Flash-on-update tint (green up / red down) */
+@keyframes flash-up {
+  0% { background-color: rgba(4, 120, 87, 0.16); }
+  100% { background-color: transparent; }
+}
+@keyframes flash-down {
+  0% { background-color: rgba(220, 38, 38, 0.14); }
+  100% { background-color: transparent; }
+}
+.flash-up { animation: flash-up 1s var(--ease-instrument); }
+.flash-down { animation: flash-down 1s var(--ease-instrument); }
+
 /* Terminal: forecast confidence band — very slow breathing */
 @keyframes band-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .confidence-band { animation: band-breathe 9s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .ticker-track { animation: none; }
+  .draw-on { animation: none; stroke-dashoffset: 0; }
+  .flash-up, .flash-down { animation: none; }
+  .confidence-band { animation: none; }
+}

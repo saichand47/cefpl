@@ -1,9 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 
 const MotionDiv = motion.div;
+const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
+
+/* ── Utility bar: navy strip with live NECC ticker crawl ──────────── */
+function UtilityBar() {
+  const [items, setItems] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/latest`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!active || !d?.zones?.length) return;
+        const preferred = ['Hyderabad', 'Barwala', 'Namakkal', 'Mumbai (CC)', 'Delhi (CC)', 'Kolkata (WB)', 'Pune', 'Vijayawada'];
+        const zones = preferred
+          .map((name) => d.zones.find((z) => z.zone === name))
+          .filter(Boolean);
+        setItems(zones.length ? zones : d.zones.slice(0, 8));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const entry = (z) => (
+    <span key={z.zone} className="mx-5 inline-flex items-center gap-1.5">
+      <span className="text-white/55">{z.zone.replace(' (CC)', '').replace(' (WB)', '').toUpperCase()}</span>
+      <span className="text-white">₹{Number(z.price).toFixed(0)}</span>
+      {z.change_1d != null && z.change_1d !== 0 && (
+        <span className={z.change_1d > 0 ? 'text-emerald-300' : 'text-red-300'}>
+          {z.change_1d > 0 ? '▲' : '▼'}{Math.abs(z.change_1d).toFixed(1)}
+        </span>
+      )}
+    </span>
+  );
+
+  return (
+    <div className="ticker-viewport h-8 overflow-hidden bg-navy text-[11.5px] num">
+      {items ? (
+        <div className="ticker-track h-8 items-center whitespace-nowrap">
+          {items.map(entry)}
+          {items.map((z) => entry({ ...z, zone: `${z.zone} ` }))}
+        </div>
+      ) : (
+        <div className="flex h-8 items-center px-5 text-white/60">
+          NECC MARKET DATA · UPDATED 2× DAILY · 06:00 / 14:00 IST
+        </div>
+      )}
+    </div>
+  );
+}
 
 function EmailAuthForm({ onSuccess }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
@@ -40,27 +89,27 @@ function EmailAuthForm({ onSuccess }) {
       <input
         type="email" required placeholder="you@company.com" autoComplete="email"
         value={email} onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-[12px] border border-gray-300 px-4 py-3 text-[15px] outline-none focus:border-[var(--color-accent)]"
+        className="w-full rounded-panel border border-border bg-white px-4 py-3 text-[15px] outline-none focus:border-accent"
       />
       <input
         type="password" required minLength={8}
         placeholder={mode === 'signup' ? 'Choose a password (min 8 chars)' : 'Password'}
         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
         value={password} onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded-[12px] border border-gray-300 px-4 py-3 text-[15px] outline-none focus:border-[var(--color-accent)]"
+        className="w-full rounded-panel border border-border bg-white px-4 py-3 text-[15px] outline-none focus:border-accent"
       />
-      {error && <p className="text-[13.5px] font-medium text-red-600">{error}</p>}
-      {notice && <p className="text-[13.5px] font-medium text-emerald-700">{notice}</p>}
+      {error && <p className="text-[13.5px] font-medium text-negative">{error}</p>}
+      {notice && <p className="text-[13.5px] font-medium text-positive">{notice}</p>}
       <button
         type="submit" disabled={busy}
-        className="w-full rounded-[14px] bg-[var(--color-accent)] px-6 py-3.5 text-[16px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50 cursor-pointer"
+        className="w-full cursor-pointer rounded-card bg-accent px-6 py-3.5 text-[16px] font-semibold text-white transition-all duration-150 hover:bg-accent-hover active:scale-[0.97] disabled:opacity-50"
       >
         {busy ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
       </button>
       <button
         type="button"
         onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setNotice(''); }}
-        className="w-full text-center text-[13.5px] font-medium text-[var(--color-accent)] hover:underline cursor-pointer"
+        className="w-full cursor-pointer text-center text-[13.5px] font-medium text-accent hover:underline"
       >
         {mode === 'signin' ? 'First time? Create your account' : 'Already have an account? Sign in'}
       </button>
@@ -77,63 +126,59 @@ export default function Layout({
 }) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navLink = 'hidden sm:inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-text-muted transition-colors hover:bg-neutral-100 hover:text-text-main';
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] font-sans text-[var(--color-text-main)] overflow-hidden flex flex-col">
+    <div className="flex min-h-screen flex-col overflow-hidden bg-bg font-sans text-text-main">
+      {/* UTILITY BAR — frames the site as a market instrument */}
+      <UtilityBar />
+
       {/* NAVIGATION */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-[var(--color-border)]">
-        <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+      <nav className="sticky top-0 z-50 border-b border-border bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
           <Link to="/" className="flex items-center gap-2.5">
             <img src="/logo.png" alt="CEFPL Logo" className="h-11 w-auto" />
-            <span className="hidden md:inline text-[15px] font-bold tracking-tight">Chatrapati Egg Farms</span>
+            <span className="hidden text-[15px] font-bold tracking-tight md:inline">Chatrapati Egg Farms</span>
           </Link>
           <div className="flex items-center gap-1.5">
-            <a
-              href="/#platform"
-              className="hidden sm:inline-flex h-10 items-center rounded-[8px] px-3 text-sm font-semibold text-[var(--color-text-muted)] transition-colors hover:bg-gray-50 hover:text-[var(--color-text-main)]"
-            >
-              Platform
-            </a>
-            <Link
-              to="/forecast"
-              className="hidden sm:inline-flex h-10 items-center rounded-[8px] px-3 mr-1.5 text-sm font-semibold text-[var(--color-text-muted)] transition-colors hover:bg-gray-50 hover:text-[var(--color-text-main)]"
-            >
-              Live Forecast
-            </Link>
+            <a href="/#platform" className={navLink}>Platform</a>
+            <Link to="/forecast" className={`${navLink} mr-1.5`}>Live Forecast</Link>
             {loading ? (
-              <div className="w-28 h-10 bg-gray-100 rounded-[12px] animate-pulse"></div>
+              <div className="h-10 w-28 animate-pulse rounded-card bg-neutral-100"></div>
             ) : user ? (
               <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
-                  <img
-                    src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
-                    alt={user.user_metadata?.full_name || 'User'}
-                    className="w-9 h-9 rounded-full border-2 border-[var(--color-accent)]/20"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-white">
-                    {(user.email || '?')[0].toUpperCase()}
-                  </div>
-                )}
-                <span className="text-sm font-semibold text-[var(--color-text-main)] hidden sm:inline">
-                  {user.user_metadata?.full_name || user.email}
-                </span>
-                <Link to="/app" className="text-sm font-semibold text-[var(--color-accent)] hover:underline">
-                  Open Portal
-                </Link>
+                <div className="flex items-center gap-3">
+                  {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                    <img
+                      src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                      alt={user.user_metadata?.full_name || 'User'}
+                      className="h-9 w-9 rounded-full border-2 border-accent/20"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
+                      {(user.email || '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <span className="hidden text-sm font-semibold text-text-main sm:inline">
+                    {user.user_metadata?.full_name || user.email}
+                  </span>
+                  <Link to="/app" className="text-sm font-semibold text-accent hover:underline">
+                    Open Portal
+                  </Link>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="rounded-full px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-neutral-100 hover:text-text-main"
+                >
+                  Sign Out
+                </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors px-3 py-2 rounded-[10px] hover:bg-gray-50"
-              >
-                Sign Out
-              </button>
-            </div>
             ) : (
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="bg-[var(--color-accent)] text-white px-5 py-2.5 rounded-[12px] text-[15px] font-semibold hover:bg-[var(--color-accent-hover)] transition-colors shadow-sm text-button cursor-pointer"
+                className="cursor-pointer rounded-card bg-accent px-5 py-2.5 text-[15px] font-semibold text-white shadow-airtable transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.97]"
               >
                 Portal Login
               </button>
@@ -144,7 +189,7 @@ export default function Layout({
               onClick={() => setMobileMenuOpen((o) => !o)}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
-              className="sm:hidden inline-flex h-10 w-10 items-center justify-center rounded-[8px] text-[var(--color-text-muted)] hover:bg-gray-50 hover:text-[var(--color-text-main)] cursor-pointer"
+              className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-card text-text-muted hover:bg-neutral-100 hover:text-text-main sm:hidden"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 {mobileMenuOpen
@@ -157,18 +202,18 @@ export default function Layout({
 
         {/* MOBILE MENU */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-[var(--color-border)] bg-white px-6 py-3">
+          <div className="border-t border-border bg-white px-6 py-3 sm:hidden">
             <a
               href="/#platform"
               onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-[8px] px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-gray-50 hover:text-[var(--color-text-main)]"
+              className="block rounded-card px-3 py-2.5 text-sm font-semibold text-text-muted hover:bg-neutral-100 hover:text-text-main"
             >
               Platform
             </a>
             <Link
               to="/forecast"
               onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-[8px] px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-gray-50 hover:text-[var(--color-text-main)]"
+              className="block rounded-card px-3 py-2.5 text-sm font-semibold text-text-muted hover:bg-neutral-100 hover:text-text-main"
             >
               Live Forecast
             </Link>
@@ -176,7 +221,7 @@ export default function Layout({
               <Link
                 to="/app"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-[8px] px-3 py-2.5 text-sm font-semibold text-[var(--color-accent)] hover:bg-gray-50"
+                className="block rounded-card px-3 py-2.5 text-sm font-semibold text-accent hover:bg-neutral-100"
               >
                 Open Portal
               </Link>
@@ -197,21 +242,21 @@ export default function Layout({
             onClick={() => setShowLoginModal(false)}
           >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-            
+            <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm"></div>
+
             {/* Modal */}
             <MotionDiv
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.97, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              exit={{ opacity: 0, scale: 0.97, y: 12 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+              className="relative mx-4 w-full max-w-md overflow-hidden rounded-modal bg-white shadow-[var(--shadow-modal)]"
             >
               {/* Close Button */}
               <button
                 onClick={() => setShowLoginModal(false)}
-                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer z-10"
+                className="absolute right-5 top-5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:bg-neutral-100 hover:text-text-main"
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -219,24 +264,24 @@ export default function Layout({
               </button>
 
               {/* Header */}
-              <div className="pt-10 pb-6 px-8 text-center">
-                <img src="/logo.png" alt="CEFPL" className="h-16 w-auto mx-auto mb-6" />
-                <h3 className="font-bold text-2xl text-[var(--color-text-main)] text-display mb-2">
+              <div className="px-8 pb-6 pt-10 text-center">
+                <img src="/logo.png" alt="CEFPL" className="mx-auto mb-6 h-16 w-auto" />
+                <h3 className="text-display mb-2 text-2xl font-bold text-text-main">
                   Welcome to EggSight
                 </h3>
-                <p className="text-[15px] text-[var(--color-text-muted)] text-body">
+                <p className="text-body text-[15px] text-text-muted">
                   Sign in with your authorized CEFPL account to access the platform.
                 </p>
               </div>
 
               {/* Divider */}
-              <div className="mx-8 border-t border-[var(--color-border)]"></div>
+              <div className="mx-8 border-t border-border"></div>
 
               {/* Login Form */}
               <div className="p-8">
                 <EmailAuthForm onSuccess={() => { setShowLoginModal(false); navigate('/app'); }} />
 
-                <p className="text-center text-[13px] text-[var(--color-text-muted)] mt-6 leading-relaxed">
+                <p className="mt-6 text-center text-[13px] leading-relaxed text-text-muted">
                   Access is restricted to authorized CEFPL team members only.
                   <br />Contact your administrator if you need access.
                 </p>
@@ -246,40 +291,83 @@ export default function Layout({
         )}
       </AnimatePresence>
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex flex-1 flex-col">
         {/* Pass down user and setShowLoginModal to child routes */}
         <Outlet context={{ user, setShowLoginModal }} />
       </main>
 
+      {/* CTA BAND */}
+      <section className="border-t border-border bg-bg-alt px-6 py-14">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 border-l-2 border-accent pl-6 md:flex-row md:items-center md:justify-between md:pl-8">
+          <div className="space-y-2">
+            <p className="micro-label text-[11px] text-accent">Team Access</p>
+            <h2 className="text-display text-2xl font-bold md:text-3xl">The full EggSight terminal, for the CEFPL team.</h2>
+            <p className="text-body max-w-xl text-[15px] text-text-muted">
+              Zone tables, model forecasts with confidence bands, feed costs, and the AI market analyst — for authorized managers and supervisors.
+            </p>
+          </div>
+          {user ? (
+            <Link
+              to="/app"
+              className="inline-block shrink-0 rounded-card bg-accent px-7 py-3.5 text-center text-[15.5px] font-semibold text-white shadow-airtable transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.97]"
+            >
+              Open Portal
+            </Link>
+          ) : (
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="inline-block shrink-0 cursor-pointer rounded-card bg-accent px-7 py-3.5 text-[15.5px] font-semibold text-white shadow-airtable transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.97]"
+            >
+              Sign In to Access
+            </button>
+          )}
+        </div>
+      </section>
+
       {/* FOOTER */}
-      <footer className="px-6 bg-white border-t border-[var(--color-border)] mt-auto">
-        <div className="max-w-7xl mx-auto grid gap-10 py-14 md:grid-cols-3">
+      <footer className="mt-auto bg-ink px-6 text-white">
+        <div className="mx-auto grid max-w-7xl gap-10 py-14 md:grid-cols-4">
           <div className="space-y-3">
-            <span className="font-bold text-[var(--color-text-main)] text-body">Chatrapati Egg Farms Pvt Ltd</span>
-            <p className="text-[14px] leading-relaxed text-[var(--color-text-muted)] max-w-xs">
-              Solapur, Maharashtra
+            <span className="text-body font-bold">Chatrapati Egg Farms Pvt Ltd</span>
+            <p className="max-w-xs text-[14px] leading-relaxed text-white/55">
+              Data-driven layer farming.<br />Solapur, Maharashtra.
             </p>
           </div>
           <div>
-            <p className="mb-3 text-[12px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Explore</p>
+            <p className="micro-label mb-3 text-[11px] text-white/45">Explore</p>
             <ul className="space-y-2 text-[14px] font-medium">
-              <li><a href="/#platform" className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">Platform modules</a></li>
-              <li><Link to="/forecast" className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">Live egg price forecast</Link></li>
-              <li><Link to="/app" className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">Team portal</Link></li>
+              <li><a href="/#platform" className="text-white/65 hover:text-white">Platform modules</a></li>
+              <li><Link to="/forecast" className="text-white/65 hover:text-white">Live egg price forecast</Link></li>
+              <li><Link to="/app" className="text-white/65 hover:text-white">Team portal</Link></li>
             </ul>
           </div>
           <div>
-            <p className="mb-3 text-[12px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Data</p>
-            <ul className="space-y-2 text-[14px] font-medium text-[var(--color-text-muted)]">
-              <li>NECC rates, 37 zones, 2x daily</li>
+            <p className="micro-label mb-3 text-[11px] text-white/45">Data</p>
+            <ul className="space-y-2 text-[14px] font-medium text-white/65">
+              <li>NECC rates, 37 zones, 2× daily</li>
               <li>1 / 7 / 14-day AI forecasts</li>
               <li>Price history since 2009</li>
             </ul>
           </div>
+          <div>
+            <p className="micro-label mb-3 text-[11px] text-white/45">Model</p>
+            <ul className="space-y-2 text-[14px] font-medium text-white/65">
+              <li>Trained on 17 years of NECC data</li>
+              <li>Accuracy tracked against actuals</li>
+              <li>Statistical estimates, not advice</li>
+            </ul>
+          </div>
         </div>
-        <div className="border-t border-[var(--color-border)]">
-          <div className="max-w-7xl mx-auto py-5 text-[13px] font-medium text-[var(--color-text-muted)]">
-            © 2026 Chatrapati Egg Farms Pvt Ltd. All rights reserved.
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 py-5 text-[13px] font-medium text-white/45">
+            <span>© 2026 Chatrapati Egg Farms Pvt Ltd. All rights reserved.</span>
+            <span className="num flex items-center gap-2 text-[12px]">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              MARKETS LIVE · UPDATED 2× DAILY
+            </span>
           </div>
         </div>
       </footer>

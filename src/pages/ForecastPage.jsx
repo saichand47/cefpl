@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowUpRight, CalendarDays, CircleAlert, Info, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowLeft, CircleAlert, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
@@ -11,27 +11,34 @@ function formatPrice(value) {
   return Number(value).toFixed(1);
 }
 
-function getSignalStyles(signal) {
+const SIGNALS = [
+  { key: 'bearish', label: 'Bearish', dot: 'bg-negative' },
+  { key: 'neutral', label: 'Neutral', dot: 'bg-text-muted' },
+  { key: 'bullish', label: 'Bullish', dot: 'bg-positive' },
+];
+
+function signalMeta(signal) {
   if (signal === 'bullish') {
     return {
       label: 'Bullish',
-      icon: TrendingUp,
-      className: 'bg-green-50 text-green-700 border-green-200',
+      tint: 'border-emerald-200 bg-emerald-50/60',
+      text: 'text-positive',
+      explain: 'The model expects prices to rise — recent momentum and cross-zone strength point higher over the forecast window.',
     };
   }
-
   if (signal === 'bearish') {
     return {
       label: 'Bearish',
-      icon: TrendingDown,
-      className: 'bg-red-50 text-red-700 border-red-200',
+      tint: 'border-red-200 bg-red-50/60',
+      text: 'text-negative',
+      explain: 'The model expects prices to ease — recent weakness across the market points lower over the forecast window.',
     };
   }
-
   return {
     label: 'Neutral',
-    icon: ArrowUpRight,
-    className: 'bg-blue-50 text-blue-700 border-blue-200',
+    tint: 'border-border bg-bg-alt',
+    text: 'text-text-secondary',
+    explain: 'No clear direction — recent volatility is high, so the model stays close to today\'s price.',
   };
 }
 
@@ -97,15 +104,15 @@ function PriceHistoryChart({ apiBase }) {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-display text-xl font-bold text-[var(--color-text-main)]">Price History</h2>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">Hyderabad daily cleaned series · ₹ per 100 eggs</p>
+          <h2 className="text-display text-xl font-bold text-text-main">Price History</h2>
+          <p className="mt-1 text-sm text-text-muted">Hyderabad daily cleaned series · ₹ per 100 eggs</p>
         </div>
-        <div className="flex rounded-[8px] border border-[var(--color-border)] bg-white">
+        <div className="flex rounded-card border border-border bg-white">
           {HISTORY_RANGES.map((r) => (
             <button
               key={r.k}
               onClick={() => { setRange(r.days); setHover(null); }}
-              className={`cursor-pointer px-3 py-1.5 text-[12.5px] font-semibold transition-colors first:rounded-l-[7px] last:rounded-r-[7px] ${range === r.days ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+              className={`num cursor-pointer px-3 py-1.5 text-[12px] font-semibold transition-colors first:rounded-l-[7px] last:rounded-r-[7px] ${range === r.days ? 'bg-accent text-white' : 'text-text-muted hover:text-text-main'}`}
             >
               {r.k}
             </button>
@@ -114,43 +121,37 @@ function PriceHistoryChart({ apiBase }) {
       </div>
 
       {loading ? (
-        <div className="h-72 animate-pulse rounded-[8px] bg-[var(--color-bg-alt)]" />
+        <div className="h-72 animate-pulse rounded-card bg-bg-alt" />
       ) : !geo.ready ? (
-        <div className="flex h-72 items-center justify-center text-sm text-[var(--color-text-muted)]">Not enough data for this range.</div>
+        <div className="flex h-72 items-center justify-center text-sm text-text-muted">Not enough data for this range.</div>
       ) : (
         <div className="relative">
           <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full cursor-crosshair" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-            <defs>
-              <linearGradient id="forecastFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#1b61c9" stopOpacity="0.16" />
-                <stop offset="100%" stopColor="#1b61c9" stopOpacity="0" />
-              </linearGradient>
-            </defs>
             {Array.from({ length: gridN + 1 }).map((_, i) => {
               const v = geo.lo + ((geo.hi - geo.lo) * i) / gridN;
               return (
                 <g key={i}>
-                  <line x1={CPAD.l} x2={CW - CPAD.r} y1={geo.y(v)} y2={geo.y(v)} stroke="#e5e7eb" strokeWidth="1" />
-                  <text x={CPAD.l - 8} y={geo.y(v) + 3} textAnchor="end" fontSize="11" fill="#9ca3af" className="tabular-nums">{v.toFixed(0)}</text>
+                  <line x1={CPAD.l} x2={CW - CPAD.r} y1={geo.y(v)} y2={geo.y(v)} stroke="#eceae4" strokeWidth="1" />
+                  <text x={CPAD.l - 8} y={geo.y(v) + 3} textAnchor="end" fontSize="10.5" fill="#6f6a61" fontFamily="IBM Plex Mono, monospace">{v.toFixed(0)}</text>
                 </g>
               );
             })}
             {[0, Math.floor((geo.series.length - 1) / 2), geo.series.length - 1].map((i) => (
-              <text key={i} x={geo.x(i)} y={CH - 8} textAnchor="middle" fontSize="11" fill="#9ca3af">{_fmtAxisDate(geo.series[i].date)}</text>
+              <text key={i} x={geo.x(i)} y={CH - 8} textAnchor="middle" fontSize="10.5" fill="#6f6a61" fontFamily="IBM Plex Mono, monospace">{_fmtAxisDate(geo.series[i].date)}</text>
             ))}
-            <path d={geo.areaPath} fill="url(#forecastFill)" />
-            <path d={geo.linePath} fill="none" stroke="#1b61c9" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            <path d={geo.areaPath} fill="rgba(27,25,21,0.05)" />
+            <path key={range} d={geo.linePath} pathLength="1" className="draw-on" fill="none" stroke="#1b1915" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
             {hover != null && (
               <g>
-                <line x1={geo.x(hover)} x2={geo.x(hover)} y1={CPAD.t} y2={CH - CPAD.b} stroke="#9ca3af" strokeWidth="1" strokeDasharray="3 3" />
-                <circle cx={geo.x(hover)} cy={geo.y(geo.series[hover].price)} r="4" fill="#1b61c9" stroke="#fff" strokeWidth="1.5" />
+                <line x1={geo.x(hover)} x2={geo.x(hover)} y1={CPAD.t} y2={CH - CPAD.b} stroke="#6f6a61" strokeWidth="1" strokeDasharray="3 3" />
+                <circle cx={geo.x(hover)} cy={geo.y(geo.series[hover].price)} r="4" fill="#1b1915" stroke="#fff" strokeWidth="1.5" />
               </g>
             )}
           </svg>
           {hover != null && (
-            <div className="pointer-events-none absolute left-3 top-1 rounded-[8px] border border-[var(--color-border)] bg-white px-3 py-1.5 text-[12.5px] shadow-sm">
-              <span className="font-semibold text-[var(--color-text-muted)] tabular-nums">{geo.series[hover].date}</span>
-              <span className="ml-2 font-bold text-[var(--color-text-main)] tabular-nums">₹{Number(geo.series[hover].price).toFixed(1)}</span>
+            <div className="num pointer-events-none absolute left-3 top-1 rounded-panel border border-border bg-white px-3 py-1.5 text-[12px] shadow-airtable">
+              <span className="font-medium text-text-muted">{geo.series[hover].date}</span>
+              <span className="ml-2 font-semibold text-text-main">₹{Number(geo.series[hover].price).toFixed(1)}</span>
             </div>
           )}
         </div>
@@ -249,20 +250,36 @@ function ForecastReasoning({ forecast, apiBase }) {
   if (!bullets.length) return null;
 
   return (
-    <div className="rounded-[8px] border border-blue-100 bg-blue-50/50 px-5 py-4">
-      <div className="flex items-start gap-3">
-        <Info size={18} className="mt-1 flex-shrink-0 text-blue-600" />
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-blue-900">Model reasoning</p>
-          <ul className="space-y-1.5">
-            {bullets.map((text, i) => (
-              <li key={i} className="text-sm leading-relaxed text-blue-800">
-                <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-blue-400 align-middle" />
-                {text}
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="rounded-card border border-border bg-white px-6 py-5 shadow-airtable">
+      <p className="micro-label text-[11px] text-text-muted">Model reasoning</p>
+      <ol className="mt-4 space-y-3.5">
+        {bullets.map((text, i) => (
+          <li key={i} className="flex gap-4">
+            <span className="num shrink-0 pt-0.5 text-[12px] font-medium text-accent">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <p className="text-sm leading-relaxed text-text-secondary">{text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function KpiCard({ label, price, change, mae }) {
+  return (
+    <div className="rounded-card border border-border bg-white p-5 shadow-airtable">
+      <p className="micro-label text-[10.5px] text-text-muted">{label}</p>
+      <p className="num mt-3 text-3xl font-semibold text-text-main">₹{formatPrice(price)}</p>
+      <div className="num mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]">
+        {change != null ? (
+          <span className={`font-semibold ${change > 0 ? 'text-positive' : change < 0 ? 'text-negative' : 'text-text-muted'}`}>
+            {change >= 0 ? '+' : '−'}{formatPrice(Math.abs(change))}
+          </span>
+        ) : (
+          <span className="text-text-muted">--</span>
+        )}
+        {mae != null && <span className="text-[11.5px] text-text-muted">±₹{Number(mae).toFixed(0)} typical</span>}
       </div>
     </div>
   );
@@ -270,6 +287,7 @@ function ForecastReasoning({ forecast, apiBase }) {
 
 export default function ForecastPage() {
   const [forecast, setForecast] = useState(null);
+  const [accuracy, setAccuracy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -308,52 +326,61 @@ export default function ForecastPage() {
         if (active) setLoading(false);
       });
 
+    fetch(`${API_BASE}/accuracy`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active) setAccuracy(d); })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
   }, []);
 
-  const signal = getSignalStyles(forecast?.signal);
-  const SignalIcon = signal.icon;
+  const signal = signalMeta(forecast?.signal);
 
   return (
-    <section className="pt-32 pb-24 px-6 bg-[var(--color-bg-alt)] min-h-[calc(100vh-80px)]">
-      <div className="max-w-7xl mx-auto">
+    <section className="min-h-[calc(100vh-80px)] bg-bg-alt px-6 pb-24 pt-12">
+      <div className="mx-auto max-w-7xl">
         <div className="mb-8">
-          <Link to="/" className="inline-flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors font-medium text-sm group">
-            <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
+          <Link to="/" className="group inline-flex items-center text-sm font-medium text-text-muted transition-colors hover:text-accent">
+            <ArrowLeft size={16} className="mr-2 transition-transform group-hover:-translate-x-1" />
             Back to Platform
           </Link>
         </div>
 
         <MotionDiv
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className="space-y-6"
         >
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-[8px] border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700">
+              <div className="micro-label inline-flex items-center gap-2 rounded-chip border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10.5px] text-badge-blue">
                 Market Intelligence
               </div>
-              <h1 className="text-display text-4xl md:text-5xl font-bold text-[var(--color-text-main)]">Hyderabad Egg Forecast</h1>
-              <p className="max-w-2xl text-[17px] leading-relaxed text-[var(--color-text-muted)] text-body">
+              <h1 className="text-display text-4xl font-bold text-text-main md:text-5xl">Hyderabad Egg Forecast</h1>
+              <p className="text-body max-w-2xl text-[17px] leading-relaxed text-text-muted">
                 Current NECC price, short-term model forecast, and recent Hyderabad market movement.
               </p>
             </div>
-            <button
-              onClick={loadForecast}
-              disabled={loading}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text-main)] shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-60"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
+            <div className="flex flex-col items-start gap-2 md:items-end">
+              <button
+                onClick={loadForecast}
+                disabled={loading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-card border border-border bg-white px-4 text-sm font-semibold text-text-main shadow-airtable transition-colors hover:bg-bg-alt disabled:opacity-60"
+              >
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                Refresh
+              </button>
+              <p className="num text-[10.5px] text-text-muted">
+                SOURCE: NECC{forecast?.date ? ` · UPDATED ${forecast.date} 06:00/14:00 IST` : ' · UPDATED 2× DAILY'}
+              </p>
+            </div>
           </div>
 
           {error && (
-            <div className="flex items-start gap-3 rounded-[8px] border border-amber-200 bg-amber-50 p-4 text-amber-800">
+            <div className="flex items-start gap-3 rounded-card border border-amber-200 bg-amber-50 p-4 text-amber-800">
               <CircleAlert size={20} className="mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Forecast service is not reachable</p>
@@ -364,72 +391,72 @@ export default function ForecastPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-            <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[var(--color-text-muted)]">Current Price</p>
-              <p className="mt-3 text-3xl font-bold text-[var(--color-text-main)]">₹{formatPrice(forecast?.current_price)}</p>
-              <p className="mt-2 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-                <CalendarDays size={15} />
-                {forecast?.date || 'Waiting for data'}
-              </p>
-            </div>
+          {/* KPI row: forecasts with signed change AND honest ±₹ typical error */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard label="Current Price" price={forecast?.current_price} change={null} mae={null} />
+            <KpiCard label="1-Day Forecast" price={forecast?.forecast?.['1_day']?.price} change={forecast?.forecast?.['1_day']?.change} mae={accuracy?.mae_1d} />
+            <KpiCard label="7-Day Forecast" price={forecast?.forecast?.['7_day']?.price} change={forecast?.forecast?.['7_day']?.change} mae={accuracy?.mae_7d} />
+            <KpiCard label="14-Day Forecast" price={forecast?.forecast?.['14_day']?.price} change={forecast?.forecast?.['14_day']?.change} mae={accuracy?.mae_14d} />
+          </div>
 
-            <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[var(--color-text-muted)]">1-Day Forecast</p>
-              <p className="mt-3 text-3xl font-bold text-[var(--color-text-main)]">₹{formatPrice(forecast?.forecast?.['1_day']?.price)}</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">
-                {forecast ? `${forecast.forecast['1_day'].change >= 0 ? '+' : ''}${formatPrice(forecast.forecast['1_day'].change)}` : '--'} change
-              </p>
-            </div>
-
-            <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[var(--color-text-muted)]">7-Day Forecast</p>
-              <p className="mt-3 text-3xl font-bold text-[var(--color-text-main)]">₹{formatPrice(forecast?.forecast?.['7_day']?.price)}</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">
-                {forecast ? `${forecast.forecast['7_day'].change >= 0 ? '+' : ''}${formatPrice(forecast.forecast['7_day'].change)}` : '--'} change
-              </p>
-            </div>
-
-            <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[var(--color-text-muted)]">14-Day Forecast</p>
-              <p className="mt-3 text-3xl font-bold text-[var(--color-text-main)]">₹{formatPrice(forecast?.forecast?.['14_day']?.price)}</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">
-                {forecast?.forecast?.['14_day'] ? `${forecast.forecast['14_day'].change >= 0 ? '+' : ''}${formatPrice(forecast.forecast['14_day'].change)} change` : 'Model warming up'}
-              </p>
-            </div>
-
-            <div className={`rounded-[8px] border p-5 shadow-sm ${signal.className}`}>
-              <p className="text-sm font-semibold opacity-80">Model Signal</p>
-              <div className="mt-4 flex items-center gap-3">
-                <SignalIcon size={28} />
-                <p className="text-3xl font-bold">{forecast ? signal.label : '--'}</p>
+          {/* Signal card explains itself */}
+          <div className={`rounded-card border px-6 py-5 ${signal.tint}`}>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="micro-label text-[10.5px] text-text-muted">Model Signal</p>
+                <p className={`text-display mt-1 text-3xl font-bold ${forecast ? signal.text : 'text-text-muted'}`}>
+                  {forecast ? signal.label : '--'}
+                </p>
+              </div>
+              <div className="flex items-center gap-5">
+                {SIGNALS.map((s) => {
+                  const active = forecast?.signal === s.key || (!forecast?.signal && s.key === 'neutral' && forecast);
+                  return (
+                    <span key={s.key} className={`micro-label flex items-center gap-1.5 text-[10px] ${active ? 'text-text-main' : 'text-text-muted opacity-40'}`}>
+                      <span className={`h-2 w-2 rounded-full ${s.dot} ${active ? '' : 'opacity-40'}`} />
+                      {s.label}
+                    </span>
+                  );
+                })}
               </div>
             </div>
+            {forecast && <p className="mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary">{signal.explain}</p>}
           </div>
 
           <ForecastReasoning forecast={forecast} apiBase={API_BASE} />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
-            <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
+            <div className="rounded-card border border-border bg-white p-5 shadow-airtable">
               <PriceHistoryChart apiBase={API_BASE} />
             </div>
 
-            <div className="rounded-[8px] border border-[var(--color-border)] bg-white p-5 shadow-sm">
-              <h2 className="text-display text-xl font-bold text-[var(--color-text-main)]">Latest Values</h2>
+            <div className="rounded-card border border-border bg-white p-5 shadow-airtable">
+              <h2 className="text-display text-xl font-bold text-text-main">Latest Values</h2>
               <div className="mt-5 max-h-72 space-y-3 overflow-auto pr-1">
                 {(forecast?.history || []).slice(-10).reverse().map((item) => (
-                  <div key={item.date} className="flex items-center justify-between rounded-[8px] bg-[var(--color-bg-alt)] px-3 py-2">
-                    <span className="text-sm font-medium text-[var(--color-text-muted)]">{item.date}</span>
-                    <span className="text-sm font-bold text-[var(--color-text-main)]">₹{formatPrice(item.price)}</span>
+                  <div key={item.date} className="num flex items-center justify-between rounded-panel bg-bg-alt px-3 py-2">
+                    <span className="text-[13px] font-medium text-text-muted">{item.date}</span>
+                    <span className="text-[13px] font-semibold text-text-main">₹{formatPrice(item.price)}</span>
                   </div>
                 ))}
                 {!forecast?.history?.length && (
-                  <div className="rounded-[8px] bg-[var(--color-bg-alt)] px-3 py-4 text-sm text-[var(--color-text-muted)]">
+                  <div className="rounded-panel bg-bg-alt px-3 py-4 text-sm text-text-muted">
                     No history loaded yet.
                   </div>
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Honest-metrics disclaimer */}
+          <div className="border-t border-border pt-5">
+            <p className="max-w-4xl text-[12.5px] leading-relaxed text-text-muted">
+              Forecasts are statistical estimates based on historical NECC price patterns — not trading
+              advice. Typical error (±₹) is the trailing-30-day mean absolute error per horizon.
+              {accuracy?.mape_1d != null && (
+                <span className="num"> Model accuracy: MAPE {accuracy.mape_1d}% (1D){accuracy.mape_7d != null ? ` · ${accuracy.mape_7d}% (7D)` : ''} over {accuracy.total_forecasts_evaluated} evaluated forecasts.</span>
+              )}
+            </p>
           </div>
         </MotionDiv>
       </div>

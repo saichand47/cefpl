@@ -4,8 +4,8 @@ import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 
 const MATERIALS = [
-  { id: 'soybean_meal', label: 'Soybean Meal', color: '#1B61C9' },
-  { id: 'maize', label: 'Maize', color: '#0E9F6E' },
+  { id: 'soybean_meal', label: 'Soybean Meal', color: '#1b1915' },
+  { id: 'maize', label: 'Maize', color: '#047857' },
 ];
 
 const fmt = (n, d = 2) => (n == null ? '--' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: d }));
@@ -28,7 +28,7 @@ function trendProjection(rows, daysAhead = 14) {
 
 function MiniChart({ rows, color }) {
   if (rows.length < 2) {
-    return <div className="flex h-24 items-center justify-center text-[12px] text-neutral-400">Add a few entries to see the trend</div>;
+    return <div className="flex h-24 items-center justify-center num text-[12px] text-text-muted">Add a few entries to see the trend</div>;
   }
   const pts = rows.map((r) => Number(r.price_per_kg));
   const min = Math.min(...pts), max = Math.max(...pts);
@@ -90,7 +90,7 @@ export default function RawMaterials() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-xl font-bold">Raw Materials</h1>
-        <p className="text-[13px] text-neutral-400">
+        <p className="text-[13px] text-text-muted">
           Soybean meal & maize quotes (₹/kg) from traders and mandis. Projection is a 30-entry linear trend — a guide, not a model forecast.
         </p>
       </div>
@@ -105,24 +105,24 @@ export default function RawMaterials() {
           const proj = trendProjection(data);
           const TrendIcon = change > 0 ? TrendingUp : change < 0 ? TrendingDown : Minus;
           return (
-            <div key={mat.id} className="rounded-[4px] border border-neutral-200 bg-white p-3.5">
+            <div key={mat.id} className="rounded-panel border border-line bg-white p-3.5">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-[14px] font-bold">{mat.label}</h2>
-                <span className="text-[12px] text-neutral-400">{data.length} entries</span>
+                <span className="num text-[12px] text-text-muted">{data.length} entries</span>
               </div>
               <div className="mt-2 flex items-baseline gap-3">
-                <p className="text-2xl font-bold">₹{fmt(latest?.price_per_kg)}<span className="text-[13px] font-medium text-neutral-400">/kg</span></p>
+                <p className="num text-2xl font-semibold">₹{fmt(latest?.price_per_kg)}<span className="text-[13px] font-medium text-text-muted">/kg</span></p>
                 {change != null && (
-                  <span className={`flex items-center gap-1 text-[13px] font-semibold ${change > 0 ? 'text-red-600' : change < 0 ? 'text-emerald-600' : 'text-gray-500'}`}>
+                  <span className={`num flex items-center gap-1 text-[13px] font-semibold ${change > 0 ? 'text-negative' : change < 0 ? 'text-positive' : 'text-text-muted'}`}>
                     <TrendIcon size={14} /> {change > 0 ? '+' : ''}{fmt(change)} vs prev
                   </span>
                 )}
               </div>
-              {latest && <p className="text-[12px] text-neutral-400">latest: {latest.recorded_on}{latest.market ? ` · ${latest.market}` : ''}</p>}
+              {latest && <p className="num text-[12px] text-text-muted">latest: {latest.recorded_on}{latest.market ? ` · ${latest.market}` : ''}</p>}
               <MiniChart rows={data} color={mat.color} />
               {proj && (
-                <p className="text-[12.5px] text-neutral-400">
-                  14-day trend projection: <b className="text-neutral-900">₹{fmt(proj.projected)}/kg</b>
+                <p className="text-[12.5px] text-text-muted">
+                  14-day trend projection: <b className="num font-semibold text-text-main">₹{fmt(proj.projected)}/kg</b>
                   {' '}({proj.perDay >= 0 ? '+' : ''}{fmt(proj.perDay, 3)}/day)
                 </p>
               )}
@@ -132,13 +132,13 @@ export default function RawMaterials() {
       </div>
 
       {/* Entry form */}
-      <form onSubmit={submit} className="rounded-[4px] border border-neutral-200 bg-white p-3.5">
+      <form onSubmit={submit} className="rounded-panel border border-line bg-white p-3.5">
         <h2 className="text-[14px] font-bold">Add quote</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-5">
           <select
             value={form.material}
             onChange={(e) => setForm({ ...form, material: e.target.value })}
-            className="rounded-[4px] border border-neutral-200 px-2.5 py-2 text-[13.5px] outline-none focus:border-neutral-400"
+            className="rounded-panel border border-line px-2.5 py-2 text-[13.5px] outline-none focus:border-accent"
           >
             {MATERIALS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
@@ -146,21 +146,21 @@ export default function RawMaterials() {
             type="number" step="0.01" min="0" placeholder="Price ₹/kg" required
             value={form.price_per_kg}
             onChange={(e) => setForm({ ...form, price_per_kg: e.target.value })}
-            className="rounded-[4px] border border-neutral-200 px-2.5 py-2 text-[13.5px] outline-none focus:border-neutral-400"
+            className="rounded-panel border border-line px-2.5 py-2 text-[13.5px] outline-none focus:border-accent"
           />
           <input
             type="date" required value={form.recorded_on}
             onChange={(e) => setForm({ ...form, recorded_on: e.target.value })}
-            className="rounded-[4px] border border-neutral-200 px-2.5 py-2 text-[13.5px] outline-none focus:border-neutral-400"
+            className="rounded-panel border border-line px-2.5 py-2 text-[13.5px] outline-none focus:border-accent"
           />
           <input
             placeholder="Market / trader (optional)" value={form.market}
             onChange={(e) => setForm({ ...form, market: e.target.value })}
-            className="rounded-[4px] border border-neutral-200 px-2.5 py-2 text-[13.5px] outline-none focus:border-neutral-400"
+            className="rounded-panel border border-line px-2.5 py-2 text-[13.5px] outline-none focus:border-accent"
           />
           <button
             type="submit" disabled={saving}
-            className="flex cursor-pointer items-center justify-center gap-1.5 rounded-[4px] bg-emerald-700 px-3 py-2 text-[13.5px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+            className="flex cursor-pointer items-center justify-center gap-1.5 rounded-panel bg-accent px-3 py-2 text-[13.5px] font-semibold text-white hover:bg-accent-hover active:scale-[0.97] disabled:opacity-50"
           >
             <Plus size={15} /> {saving ? 'Saving…' : 'Add entry'}
           </button>
@@ -168,17 +168,17 @@ export default function RawMaterials() {
         <input
           placeholder="Notes (optional)" value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          className="mt-3 w-full rounded-[4px] border border-neutral-200 px-2.5 py-2 text-[13.5px] outline-none focus:border-neutral-400"
+          className="mt-3 w-full rounded-panel border border-line px-2.5 py-2 text-[13.5px] outline-none focus:border-accent"
         />
-        {error && <p className="mt-2 text-[13px] font-medium text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-[13px] font-medium text-negative">{error}</p>}
       </form>
 
       {/* Entries table */}
-      <div className="rounded-[4px] border border-neutral-200 bg-white">
-        <h2 className="border-b border-neutral-200 px-4 py-3 text-[14px] font-bold">Recent entries</h2>
+      <div className="rounded-panel border border-line bg-white">
+        <h2 className="border-b border-line px-4 py-3 text-[14px] font-bold">Recent entries</h2>
         <table className="w-full text-[13.5px]">
           <thead>
-            <tr className="border-b border-neutral-200 text-left text-[11.5px] uppercase tracking-wide text-neutral-400">
+            <tr className="micro-label border-b border-line text-left text-[10px] text-text-muted">
               <th className="px-4 py-2 font-semibold">Date</th>
               <th className="px-4 py-2 font-semibold">Material</th>
               <th className="px-4 py-2 text-right font-semibold">₹/kg</th>
@@ -189,15 +189,15 @@ export default function RawMaterials() {
           </thead>
           <tbody>
             {[...rows].reverse().slice(0, 30).map((r) => (
-              <tr key={r.id} className="border-b border-neutral-200/60 last:border-0 hover:bg-neutral-50/60">
-                <td className="px-4 py-2">{r.recorded_on}</td>
+              <tr key={r.id} className="border-b border-line/60 last:border-0 hover:bg-bg-alt">
+                <td className="num px-4 py-2">{r.recorded_on}</td>
                 <td className="px-4 py-2">{MATERIALS.find((m) => m.id === r.material)?.label}</td>
-                <td className="px-4 py-2 text-right font-semibold">₹{fmt(r.price_per_kg)}</td>
-                <td className="px-4 py-2 text-neutral-400">{r.market || '—'}</td>
-                <td className="px-4 py-2 text-neutral-400">{r.notes || '—'}</td>
+                <td className="num px-4 py-2 text-right font-semibold">₹{fmt(r.price_per_kg)}</td>
+                <td className="px-4 py-2 text-text-muted">{r.market || '—'}</td>
+                <td className="px-4 py-2 text-text-muted">{r.notes || '—'}</td>
                 {isAdmin && (
                   <td className="px-4 py-2 text-right">
-                    <button onClick={() => remove(r.id)} className="cursor-pointer text-neutral-400 hover:text-red-600">
+                    <button onClick={() => remove(r.id)} className="cursor-pointer text-text-muted hover:text-negative">
                       <Trash2 size={14} />
                     </button>
                   </td>
@@ -205,7 +205,7 @@ export default function RawMaterials() {
               </tr>
             ))}
             {!rows.length && (
-              <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-8 text-center text-neutral-400">
+              <tr><td colSpan={isAdmin ? 6 : 5} className="px-4 py-8 text-center text-text-muted">
                 No entries yet — add the first quote above.
               </td></tr>
             )}

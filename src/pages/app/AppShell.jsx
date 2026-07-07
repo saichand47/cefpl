@@ -17,7 +17,7 @@ function useProfile(user) {
   return profile;
 }
 
-/* ── Market Pulse ribbon ─────────────────────────────────────────── */
+/* ── Market Pulse ribbon: dark ink strip, mono ticker crawl, LIVE ping ── */
 function MarketPulse() {
   const [items, setItems] = useState(null);
   useEffect(() => {
@@ -30,7 +30,7 @@ function MarketPulse() {
     ]).then(([fc, latest, mats]) => {
       if (!active) return;
       const out = [];
-      const arrow = (v) => (v > 0 ? { a: '▲', c: 'text-emerald-400' } : v < 0 ? { a: '▼', c: 'text-red-400' } : { a: '—', c: 'text-neutral-500' });
+      const arrow = (v) => (v > 0 ? { a: '▲', c: 'text-emerald-400' } : v < 0 ? { a: '▼', c: 'text-red-400' } : { a: '—', c: 'text-white/40' });
       const hyd = latest?.zones?.find((z) => z.zone === 'Hyderabad');
       if (hyd) out.push({ label: 'NECC HYD', value: `₹${hyd.price.toFixed(0)}`, delta: hyd.change_1d, ...arrow(hyd.change_1d) });
       for (const zn of ['Barwala', 'Namakkal', 'Mumbai (CC)', 'Delhi (CC)']) {
@@ -39,24 +39,39 @@ function MarketPulse() {
       }
       const soy = mats.find((m) => m.material === 'soybean_meal');
       const mz = mats.find((m) => m.material === 'maize');
-      if (soy) out.push({ label: 'SOYA DOC', value: `₹${Number(soy.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-neutral-400' });
-      if (mz) out.push({ label: 'MAIZE', value: `₹${Number(mz.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-neutral-400' });
-      if (fc?.signal) out.push({ label: '7D OUTLOOK', value: fc.signal.toUpperCase(), a: '', c: fc.signal === 'bullish' ? 'text-emerald-400' : fc.signal === 'bearish' ? 'text-red-400' : 'text-neutral-400' });
+      if (soy) out.push({ label: 'SOYA DOC', value: `₹${Number(soy.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-white/50' });
+      if (mz) out.push({ label: 'MAIZE', value: `₹${Number(mz.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-white/50' });
+      if (fc?.signal) out.push({ label: '7D OUTLOOK', value: fc.signal.toUpperCase(), a: '', c: fc.signal === 'bullish' ? 'text-emerald-400' : fc.signal === 'bearish' ? 'text-red-400' : 'text-white/50' });
       setItems(out);
     });
     return () => { active = false; };
   }, []);
 
+  const entry = (it, dup) => (
+    <span key={`${it.label}${dup ? '-b' : ''}`} className="mx-4 inline-flex items-center gap-1.5 text-white/60">
+      <span className="font-medium text-white/40">{it.label}</span>
+      <span className="text-white">{it.value}</span>
+      {it.delta != null && <span className={it.c}>{it.a}{Math.abs(it.delta).toFixed(1)}</span>}
+    </span>
+  );
+
   return (
-    <div className="sticky top-0 z-30 flex h-8 items-center gap-6 overflow-x-auto border-b border-neutral-800 bg-neutral-900 px-4 text-[11.5px] font-medium tracking-wide whitespace-nowrap">
-      {items ? items.map((it) => (
-        <span key={it.label} className="flex items-center gap-1.5 text-neutral-400">
-          <span className="font-semibold text-neutral-500">{it.label}</span>
-          <span className="text-neutral-100 tabular-nums">{it.value}</span>
-          {it.delta != null && <span className={`tabular-nums ${it.c}`}>{it.a}{Math.abs(it.delta).toFixed(1)}</span>}
-          {it.delta == null && it.a === '' && it.label === '7D OUTLOOK' && <span className={it.c}>●</span>}
+    <div className="ticker-viewport num sticky top-0 z-30 flex h-8 items-center overflow-hidden border-b border-white/10 bg-ink text-[11.5px]">
+      <span className="micro-label z-10 flex h-8 shrink-0 items-center gap-2 bg-ink pl-4 pr-5 text-[9.5px] text-white/60">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
         </span>
-      )) : <span className="text-neutral-600">Loading market data…</span>}
+        Live
+      </span>
+      {items ? (
+        <div className="ticker-track h-8 items-center whitespace-nowrap">
+          {items.map((it) => entry(it, false))}
+          {items.map((it) => entry(it, true))}
+        </div>
+      ) : (
+        <span className="text-white/35">Loading market data…</span>
+      )}
     </div>
   );
 }
@@ -89,8 +104,8 @@ function CommandPalette({ open, setOpen }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/40 pt-[18vh]" onClick={() => setOpen(false)}>
-      <div className="w-full max-w-lg overflow-hidden rounded-[10px] border border-neutral-700 bg-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-ink/40 pt-[18vh]" onClick={() => setOpen(false)}>
+      <div className="w-full max-w-lg overflow-hidden rounded-modal border border-white/15 bg-ink shadow-[var(--shadow-modal)]" onClick={(e) => e.stopPropagation()}>
         <input
           autoFocus value={q} onChange={(e) => { setQ(e.target.value); setIdx(0); }}
           onKeyDown={(e) => {
@@ -100,20 +115,20 @@ function CommandPalette({ open, setOpen }) {
             if (e.key === 'Escape') setOpen(false);
           }}
           placeholder="Search pages, zones, actions…"
-          className="w-full border-b border-neutral-800 bg-transparent px-4 py-3 text-[14px] text-neutral-100 placeholder-neutral-500 outline-none"
+          className="w-full border-b border-white/10 bg-transparent px-4 py-3 text-[14px] text-white placeholder-white/35 outline-none"
         />
         <div className="max-h-72 overflow-y-auto py-1">
           {actions.map((a, i) => (
             <button
               key={a.label} onMouseEnter={() => setIdx(i)}
               onClick={() => { a.run(); setOpen(false); }}
-              className={`flex w-full items-center justify-between px-4 py-2 text-left text-[13px] ${i === idx ? 'bg-neutral-800 text-white' : 'text-neutral-300'}`}
+              className={`flex w-full items-center justify-between px-4 py-2 text-left text-[13px] ${i === idx ? 'bg-white/10 text-white' : 'text-white/65'}`}
             >
               <span>{a.label}</span>
-              <span className="text-[11px] text-neutral-500">{a.hint}</span>
+              <span className="num text-[10.5px] text-white/35">{a.hint}</span>
             </button>
           ))}
-          {!actions.length && <p className="px-4 py-6 text-center text-[13px] text-neutral-500">No matches</p>}
+          {!actions.length && <p className="px-4 py-6 text-center text-[13px] text-white/35">No matches</p>}
         </div>
       </div>
     </div>
@@ -141,38 +156,38 @@ export default function AppShell({ user, loading, handleLogout }) {
   }, []);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-white text-sm text-neutral-400">Loading…</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-white text-sm text-text-muted">Loading…</div>;
   }
   if (!user) return <Navigate to="/" replace />;
 
   return (
-    <div className="portal flex min-h-screen flex-col bg-[#fafafa] font-sans text-neutral-900">
+    <div className="portal flex min-h-screen flex-col bg-bg font-sans text-text-main">
       <MarketPulse />
       <CommandPalette key={paletteOpen ? 'open' : 'closed'} open={paletteOpen} setOpen={setPaletteOpen} />
       <div className="flex flex-1">
-        <aside className="fixed bottom-0 left-0 top-8 z-20 flex w-52 flex-col border-r border-neutral-200 bg-white">
-          <Link to="/" className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3">
+        <aside className="fixed bottom-0 left-0 top-8 z-20 flex w-52 flex-col border-r border-line bg-white">
+          <Link to="/" className="flex items-center gap-2 border-b border-line px-4 py-3">
             <span className="text-[14px] font-bold tracking-tight">EggSight</span>
-            <span className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-neutral-500">Terminal</span>
+            <span className="micro-label rounded-chip bg-neutral-100 px-1.5 py-0.5 text-[9px] text-text-muted">Terminal</span>
           </Link>
 
           <button
             onClick={() => setPaletteOpen(true)}
-            className="mx-3 mt-3 flex cursor-pointer items-center gap-2 rounded-[6px] border border-neutral-200 px-2.5 py-1.5 text-[12px] text-neutral-400 hover:border-neutral-300 hover:text-neutral-600"
+            className="mx-3 mt-3 flex cursor-pointer items-center gap-2 rounded-panel border border-line px-2.5 py-1.5 text-[12px] text-text-muted hover:border-border hover:text-text-secondary"
           >
-            <Command size={12} /> Search… <kbd className="ml-auto rounded border border-neutral-200 px-1 text-[10px]">⌘K</kbd>
+            <Command size={12} /> Search… <kbd className="num ml-auto rounded-chip border border-line px-1 text-[10px]">⌘K</kbd>
           </button>
 
           <nav className="flex-1 px-3 py-3">
             {NAV_GROUPS.map((g) => (
               <div key={g.heading} className="mb-4">
-                <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">{g.heading}</p>
+                <p className="micro-label px-2 pb-1 text-[9.5px] text-text-muted">{g.heading}</p>
                 {g.items.map((item) => (
                   <NavLink
                     key={item.to} to={item.to} end={item.end}
                     className={({ isActive }) =>
-                      `block rounded-[6px] px-2.5 py-1.5 text-[13px] font-medium ${
-                        isActive ? 'bg-emerald-700/10 text-emerald-800' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                      `block rounded-panel px-2.5 py-1.5 text-[13px] font-medium ${
+                        isActive ? 'bg-accent/10 text-accent-hover' : 'text-text-secondary hover:bg-neutral-100 hover:text-text-main'
                       }`
                     }
                   >
@@ -183,15 +198,15 @@ export default function AppShell({ user, loading, handleLogout }) {
             ))}
           </nav>
 
-          <div className="border-t border-neutral-200 px-4 py-2.5">
+          <div className="border-t border-line px-4 py-2.5">
             <p className="truncate text-[12px] font-semibold">{user.email}</p>
             <div className="mt-1 flex items-center justify-between">
-              <span className={`rounded-sm px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider ${
-                profile?.role === 'admin' ? 'bg-emerald-700/10 text-emerald-800' : 'bg-neutral-100 text-neutral-500'
+              <span className={`micro-label rounded-chip px-1.5 py-0.5 text-[9px] ${
+                profile?.role === 'admin' ? 'bg-accent/10 text-accent-hover' : 'bg-neutral-100 text-text-muted'
               }`}>
                 {profile?.role || '…'}
               </span>
-              <button onClick={handleLogout} className="flex cursor-pointer items-center gap-1 text-[11.5px] font-medium text-neutral-400 hover:text-red-600">
+              <button onClick={handleLogout} className="flex cursor-pointer items-center gap-1 text-[11.5px] font-medium text-text-muted hover:text-negative">
                 <LogOut size={12} /> Sign out
               </button>
             </div>

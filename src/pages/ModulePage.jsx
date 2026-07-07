@@ -34,21 +34,21 @@ export default function ModulePage() {
 
         <MotionDiv
           initial="hidden" animate="visible" variants={slideUp}
-          className="bg-white border-airtable rounded-[20px] p-8 md:p-12 shadow-soft"
+          className="bg-white border-airtable rounded-feature p-8 md:p-12 shadow-airtable"
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">{mod.tag}</span>
+                <span className="micro-label text-[11px] text-[var(--color-text-muted)]">{mod.tag}</span>
                 <span className="text-xs text-[var(--color-border)]">·</span>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Module {mod.num}</span>
+                <span className="micro-label text-[11px] text-[var(--color-text-muted)]">Module {mod.num}</span>
               </div>
               <h1 className="font-bold text-4xl text-display">{mod.title}</h1>
               <p className="font-semibold text-2xl text-[var(--color-text-main)] leading-snug">{mod.headline}</p>
               <p className="text-[var(--color-text-muted)] leading-relaxed text-[17px] text-body">{mod.detail}</p>
             </div>
-            <div className="space-y-4 lg:pt-16 bg-[var(--color-bg-alt)] p-6 md:p-8 rounded-[16px] border border-[var(--color-border)]">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-main)] mb-6">Key Capabilities</p>
+            <div className="space-y-4 lg:pt-16 bg-[var(--color-bg-alt)] p-6 md:p-8 rounded-feature border border-[var(--color-border)]">
+              <p className="micro-label text-[11px] text-[var(--color-text-main)] mb-6">Key Capabilities</p>
               {mod.bullets.map((b, j) => (
                 <div key={j} className="flex items-start gap-4">
                   <div className="w-6 h-6 rounded-full bg-[var(--color-accent)] flex-shrink-0 flex items-center justify-center mt-0.5 shadow-sm">
