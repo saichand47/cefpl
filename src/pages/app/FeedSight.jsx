@@ -9,14 +9,14 @@ import { supabase } from '../../supabaseClient';
 
 const fmt = (n, d = 0) => (n == null ? '--' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: d }));
 const pct = (p) => (p == null ? '--' : `${p > 0 ? '+' : ''}${Number(p).toFixed(2)}%`);
-const dirColor = (d) => (d === 'up' ? 'text-emerald-700' : d === 'down' ? 'text-red-600' : 'text-neutral-400');
+const dirColor = (d) => (d === 'up' ? 'text-positive' : d === 'down' ? 'text-negative' : 'text-text-muted');
 const dirArrow = (d) => (d === 'up' ? '▲' : d === 'down' ? '▼' : '—');
 const isNaiveModel = (m) => String(m).includes('naive');
 const labelClass = (l) =>
-  /Strong Up|^Up/.test(l) ? 'bg-emerald-700/10 text-emerald-800'
-  : /Strong Down|^Down/.test(l) ? 'bg-red-600/10 text-red-700'
+  /Strong Up|^Up/.test(l) ? 'bg-accent/10 text-accent-hover'
+  : /Strong Down|^Down/.test(l) ? 'bg-negative/10 text-negative'
   : /Caution|Low/.test(l) ? 'bg-amber-500/10 text-amber-700'
-  : 'bg-neutral-100 text-neutral-500';
+  : 'bg-neutral-100 text-text-muted';
 const actionLabel = { model_ok: 'model', use_state_model: 'state model', use_naive: 'naive' };
 
 function decisionLabel(changePct, conf, naive) {
@@ -32,9 +32,9 @@ function decisionLabel(changePct, conf, naive) {
 /* ── Market detail overlay ───────────────────────────────────────── */
 function DetailRow({ label, children }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-neutral-100 py-1.5 last:border-0">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">{label}</span>
-      <span className="text-right text-[12.5px] tabular-nums">{children}</span>
+    <div className="flex items-center justify-between gap-4 border-b border-line/60 py-1.5 last:border-0">
+      <span className="micro-label text-[10px] text-text-muted">{label}</span>
+      <span className="num text-right text-[12.5px]">{children}</span>
     </div>
   );
 }
@@ -45,20 +45,20 @@ function MarketDetail({ m, onClose }) {
   const low = m.confidence < 0.45;
   const leg = (h) => m[h] || {};
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4"
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-ink/40 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-[560px] overflow-hidden rounded-[6px] border border-neutral-200 bg-white shadow-2xl">
-        <div className="flex items-start justify-between border-b border-neutral-200 px-4 py-3">
+      <div className="w-full max-w-[560px] overflow-hidden rounded-modal border border-line bg-white shadow-[var(--shadow-modal)]">
+        <div className="flex items-start justify-between border-b border-line px-4 py-3">
           <div>
             <h3 className="text-[15px] font-bold leading-tight">{m.market}
-              <span className="ml-2 text-[12px] font-normal text-neutral-400">· {m.crop}</span></h3>
-            <p className="text-[11.5px] text-neutral-400">{m.district || '—'}, {m.state} · origin week {m.refresh_week}</p>
+              <span className="ml-2 text-[12px] font-normal text-text-muted">· {m.crop}</span></h3>
+            <p className="text-[11.5px] text-text-muted">{m.district || '—'}, {m.state} · origin week {m.refresh_week}</p>
           </div>
-          <button onClick={onClose} className="cursor-pointer rounded px-1.5 text-[16px] text-neutral-400 hover:text-neutral-700">✕</button>
+          <button onClick={onClose} className="cursor-pointer rounded px-1.5 text-[16px] text-text-muted hover:text-text-main">✕</button>
         </div>
 
         {(naive || low) && (
-          <div className="mx-4 mt-3 rounded-[4px] border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+          <div className="mx-4 mt-3 rounded-chip border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
             {naive && <div>⚠ Naive fallback in use — no model forecast; treat as carry-forward of the current price (no directional signal).</div>}
             {low && <div>⚠ Low confidence ({m.confidence.toFixed(2)}) — thin/volatile market; use caution.</div>}
           </div>
@@ -74,18 +74,18 @@ function MarketDetail({ m, onClose }) {
           </DetailRow>
           <DetailRow label="Direction (nw / 4w)">
             <span className={dirColor(leg('nw').direction)}>{leg('nw').direction || '--'}</span>
-            <span className="text-neutral-300"> / </span>
+            <span className="text-border"> / </span>
             <span className={dirColor(leg('fw').direction)}>{leg('fw').direction || '--'}</span>
           </DetailRow>
           <DetailRow label="Confidence score"><b>{m.confidence.toFixed(3)}</b></DetailRow>
-          <DetailRow label="Model used"><span className="text-neutral-600">{m.model_used}</span></DetailRow>
-          <DetailRow label="Recommended action"><span className="text-neutral-600">{m.recommended_action}</span></DetailRow>
-          <DetailRow label="Fallback reason"><span className="text-neutral-600">{m.fallback_reason === 'none' ? '—' : m.fallback_reason}</span></DetailRow>
+          <DetailRow label="Model used"><span className="text-text-secondary">{m.model_used}</span></DetailRow>
+          <DetailRow label="Recommended action"><span className="text-text-secondary">{m.recommended_action}</span></DetailRow>
+          <DetailRow label="Fallback reason"><span className="text-text-secondary">{m.fallback_reason === 'none' ? '—' : m.fallback_reason}</span></DetailRow>
           <div className="mt-2 flex items-center gap-2">
             <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${labelClass(leg('nw').label || '')}`}>NW: {leg('nw').label || '--'}</span>
             <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${labelClass(leg('fw').label || '')}`}>4W: {leg('fw').label || '--'}</span>
           </div>
-          <p className="mt-3 text-[11px] text-neutral-400">FeedSight is decision-support only — directional intelligence, not a price guarantee. ₹ = INR/quintal.</p>
+          <p className="mt-3 text-[11px] text-text-muted">FeedSight is decision-support only — directional intelligence, not a price guarantee. ₹ = INR/quintal.</p>
         </div>
       </div>
     </div>
@@ -190,7 +190,7 @@ export default function FeedSight() {
 
   const th = (label, key, right) => (
     <th onClick={() => setSort((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))}
-      className={`sticky top-0 cursor-pointer select-none bg-neutral-50 px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wider text-neutral-500 hover:text-neutral-800 ${right ? 'text-right' : 'text-left'}`}>
+      className={`micro-label sticky top-0 cursor-pointer select-none bg-bg-alt px-3 py-1.5 text-[9.5px] text-text-muted hover:text-text-main ${right ? 'text-right' : 'text-left'}`}>
       {label}{sort.key === key ? (sort.dir === -1 ? ' ↓' : ' ↑') : ''}
     </th>
   );
@@ -207,28 +207,28 @@ export default function FeedSight() {
 
   return (
     <div className="mx-auto max-w-[1240px] space-y-4">
-      <div className="rounded-[4px] border border-amber-200 bg-amber-50 px-4 py-2 text-[12px] text-amber-800">
+      <div className="rounded-panel border border-amber-200 bg-amber-50 px-4 py-2 text-[12px] text-amber-800">
         Near-term mandi <b>directional intelligence</b> for procurement/selling support — not exact price prediction.
         Read direction + confidence together; treat naive-fallback / low-confidence rows with caution.
       </div>
 
       {/* KPI strip */}
-      <div className="flex flex-wrap rounded-[4px] border border-neutral-200 bg-white">
+      <div className="flex flex-wrap rounded-panel border border-line bg-white">
         {meta ? (
           <>
             {[['Refresh week', meta.week], ['Forecast markets', meta.n], ['Model forecasts', meta.nModel],
               ['Naive fallback', meta.nFallback], ['Avg confidence', meta.avgConf.toFixed(2)]].map(([l, v]) => (
-              <div key={l} className="flex-1 border-r border-neutral-200 px-4 py-2.5 last:border-r-0">
-                <p className="text-[10.5px] font-bold uppercase tracking-wider text-neutral-400">{l}</p>
-                <p className="text-[19px] font-bold tabular-nums leading-tight">{v}</p>
+              <div key={l} className="flex-1 border-r border-line px-4 py-2.5 last:border-r-0">
+                <p className="micro-label text-[9.5px] text-text-muted">{l}</p>
+                <p className="num text-[19px] font-semibold leading-tight">{v}</p>
               </div>
             ))}
             <div className="flex-1 px-4 py-2.5">
-              <p className="text-[10.5px] font-bold uppercase tracking-wider text-neutral-400">Next-wk dir (U/F/D)</p>
-              <p className="text-[19px] font-bold tabular-nums leading-tight">
-                <span className="text-emerald-700">{meta.dirs.up}</span> /
-                <span className="text-neutral-400"> {meta.dirs.flat}</span> /
-                <span className="text-red-600"> {meta.dirs.down}</span>
+              <p className="micro-label text-[9.5px] text-text-muted">Next-wk dir (U/F/D)</p>
+              <p className="num text-[19px] font-semibold leading-tight">
+                <span className="text-positive">{meta.dirs.up}</span> /
+                <span className="text-text-muted"> {meta.dirs.flat}</span> /
+                <span className="text-negative"> {meta.dirs.down}</span>
               </p>
             </div>
           </>
@@ -236,58 +236,58 @@ export default function FeedSight() {
       </div>
 
       {/* Filters + table */}
-      <div className="rounded-[4px] border border-neutral-200 bg-white">
-        <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 px-4 py-2 text-[12px]">
-          <h2 className="text-[13px] font-bold">Mandi forecasts <span className="font-normal text-neutral-400">v1.2 · {filtered.length} markets</span></h2>
+      <div className="rounded-panel border border-line bg-white">
+        <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2 text-[12px]">
+          <h2 className="text-[13px] font-bold">Mandi forecasts <span className="font-normal text-text-muted">v1.2 · {filtered.length} markets</span></h2>
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <select value={crop} onChange={(e) => setCrop(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={crop} onChange={(e) => setCrop(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="">All crops</option><option>Soybean</option><option>Maize</option></select>
-            <select value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="rounded-panel border border-line px-2 py-1">
               <option value="">All states</option>{states.map((s) => <option key={s}>{s}</option>)}</select>
-            <select value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="">All districts</option>{districts.map((d) => <option key={d}>{d}</option>)}</select>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="market…" className="w-24 rounded-[4px] border border-neutral-200 px-2 py-1 outline-none focus:border-neutral-400" />
-            <select value={hz} onChange={(e) => setHz(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="market…" className="w-24 rounded-panel border border-line px-2 py-1 outline-none focus:border-accent" />
+            <select value={hz} onChange={(e) => setHz(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="nw">Next week</option><option value="fw">Next 4 weeks</option></select>
-            <select value={dir} onChange={(e) => setDir(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={dir} onChange={(e) => setDir(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="">All dir</option><option>up</option><option>flat</option><option>down</option></select>
-            <select value={action} onChange={(e) => setAction(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={action} onChange={(e) => setAction(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="">All actions</option><option value="model_ok">model_ok</option><option value="use_state_model">use_state_model</option><option value="use_naive">use_naive</option></select>
-            <select value={modelKind} onChange={(e) => setModelKind(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={modelKind} onChange={(e) => setModelKind(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="">All models</option><option value="model">model</option><option value="state">state model</option><option value="naive">naive</option></select>
-            <label className="text-neutral-400">conf≥</label>
-            <input type="number" min="0" max="1" step="0.05" value={minConf} onChange={(e) => setMinConf(parseFloat(e.target.value) || 0)} className="w-16 rounded-[4px] border border-neutral-200 px-2 py-1" />
-            <button onClick={exportCsv} className="rounded-[4px] bg-neutral-900 px-2.5 py-1 font-semibold text-white">Export CSV</button>
+            <label className="text-text-muted">conf≥</label>
+            <input type="number" min="0" max="1" step="0.05" value={minConf} onChange={(e) => setMinConf(parseFloat(e.target.value) || 0)} className="w-16 rounded-panel border border-line px-2 py-1" />
+            <button onClick={exportCsv} className="rounded-panel bg-accent px-2.5 py-1 font-semibold text-white hover:bg-accent-hover">Export CSV</button>
           </div>
         </div>
 
-        {err && <div className="px-4 py-3 text-[12px] text-red-600">Failed to load forecasts: {err}</div>}
+        {err && <div className="px-4 py-3 text-[12px] text-negative">Failed to load forecasts: {err}</div>}
         <div className="max-h-[560px] overflow-y-auto">
           <table className="w-full text-[12.5px]">
-            <thead><tr className="border-b border-neutral-200">
+            <thead><tr className="border-b border-line">
               {th('Crop', 'crop')}{th('State', 'state')}{th('District', 'district')}{th('Market', 'market')}
               {th('Modal ₹', 'current', true)}{th('Next-wk ₹', 'nwf', true)}{th('Next-4wk ₹', 'fwf', true)}
-              <th className="sticky top-0 bg-neutral-50 px-3 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-neutral-500">Dir</th>
+              <th className="micro-label sticky top-0 bg-bg-alt px-3 py-1.5 text-left text-[9.5px] text-text-muted">Dir</th>
               {th('Chg %', 'pct', true)}{th('Conf', 'confidence', true)}
-              <th className="sticky top-0 bg-neutral-50 px-3 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-neutral-500">Decision</th>
-              <th className="sticky top-0 bg-neutral-50 px-3 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-neutral-500">Model</th>
+              <th className="micro-label sticky top-0 bg-bg-alt px-3 py-1.5 text-left text-[9.5px] text-text-muted">Decision</th>
+              <th className="micro-label sticky top-0 bg-bg-alt px-3 py-1.5 text-left text-[9.5px] text-text-muted">Model</th>
               {th('Action', 'action')}
             </tr></thead>
             <tbody>
               {markets ? filtered.map((m, i) => { const leg = m[hz] || {}; const naive = isNaiveModel(m.model_used);
                 return (
-                  <tr key={i} onClick={() => setSelected(m)} className="cursor-pointer border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
+                  <tr key={i} onClick={() => setSelected(m)} className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-bg-alt">
                     <td className="px-3 py-1.5">{m.crop}</td><td className="px-3 py-1.5">{m.state}</td>
-                    <td className="px-3 py-1.5 text-neutral-500">{m.district || '—'}</td><td className="px-3 py-1.5 font-medium">{m.market}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(m.current)}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(m.nw?.forecast)}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(m.fw?.forecast)}</td>
+                    <td className="px-3 py-1.5 text-text-muted">{m.district || '—'}</td><td className="px-3 py-1.5 font-medium">{m.market}</td>
+                    <td className="px-3 py-1.5 num text-right">₹{fmt(m.current)}</td>
+                    <td className="px-3 py-1.5 num text-right">₹{fmt(m.nw?.forecast)}</td>
+                    <td className="px-3 py-1.5 num text-right">₹{fmt(m.fw?.forecast)}</td>
                     <td className={`px-3 py-1.5 ${dirColor(leg.direction)}`}>{leg.direction || '--'}</td>
-                    <td className={`px-3 py-1.5 text-right font-semibold tabular-nums ${dirColor(leg.direction)}`}>{pct(leg.change_pct)}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{m.confidence.toFixed(2)}</td>
+                    <td className={`px-3 py-1.5 num text-right font-semibold ${dirColor(leg.direction)}`}>{pct(leg.change_pct)}</td>
+                    <td className="px-3 py-1.5 num text-right">{m.confidence.toFixed(2)}</td>
                     <td className="px-3 py-1.5"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${labelClass(leg.label || '')}`}>{leg.label || '--'}</span></td>
-                    <td className="px-3 py-1.5 text-neutral-400">{naive ? 'naive' : 'model'}</td>
-                    <td className="px-3 py-1.5 text-neutral-500">{actionLabel[m.recommended_action] || m.recommended_action}</td>
+                    <td className="px-3 py-1.5 text-text-muted">{naive ? 'naive' : 'model'}</td>
+                    <td className="px-3 py-1.5 text-text-muted">{actionLabel[m.recommended_action] || m.recommended_action}</td>
                   </tr>
                 );
               }) : Array.from({ length: 10 }).map((_, i) => (
@@ -296,7 +296,7 @@ export default function FeedSight() {
             </tbody>
           </table>
         </div>
-        <div className="border-t border-neutral-200 px-4 py-1.5 text-[11px] text-neutral-400">
+        <div className="border-t border-line px-4 py-1.5 text-[11px] text-text-muted">
           Click any row for market detail. Decision = label for the selected horizon. ₹ = INR/quintal. FeedSight is decision-support only — directional intelligence, not a price guarantee.
         </div>
       </div>

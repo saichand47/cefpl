@@ -9,7 +9,7 @@ import { supabase } from '../../supabaseClient';
 const fmt = (n, d = 1) => (n == null ? '--' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: d }));
 const HZ = { next_week: 'Next week', next_4w: 'Next 4 weeks' };
 const better = (m, n) => (m == null || n == null ? null : Math.round((1 - m / n) * 1000) / 10); // % better than naive
-const beatsCls = (b) => (b === true ? 'text-emerald-700' : b === false ? 'text-red-600' : 'text-neutral-400');
+const beatsCls = (b) => (b === true ? 'text-positive' : b === false ? 'text-negative' : 'text-text-muted');
 
 export default function FeedSightAccuracy() {
   const [rolling, setRolling] = useState(null);
@@ -41,7 +41,6 @@ export default function FeedSightAccuracy() {
   const alerts = useMemo(() => r12.filter((x) => x.beats_naive === false), [r12]);
   const loading = rolling == null;
 
-  const states = useMemo(() => [...new Set((byState || []).map((x) => x.state))].sort(), [byState]);
   const stateRows = useMemo(() => (byState || [])
     .filter((x) => (!crop || x.crop === crop) && x.horizon === hz)
     .sort((a, b) => (better(a.model_mae, a.naive_mae) ?? -99) - (better(b.model_mae, b.naive_mae) ?? -99) > 0 ? -1 : 1),
@@ -52,23 +51,23 @@ export default function FeedSightAccuracy() {
 
   function kpi(label, val, sub) {
     return (
-      <div className="flex-1 border-r border-neutral-200 px-4 py-2.5 last:border-r-0">
-        <p className="text-[10.5px] font-bold uppercase tracking-wider text-neutral-400">{label}</p>
-        <p className="text-[19px] font-bold tabular-nums leading-tight">{val}</p>
-        {sub && <p className="text-[11px] text-neutral-400">{sub}</p>}
+      <div className="flex-1 border-r border-line px-4 py-2.5 last:border-r-0">
+        <p className="micro-label text-[9.5px] text-text-muted">{label}</p>
+        <p className="num text-[19px] font-semibold leading-tight">{val}</p>
+        {sub && <p className="text-[11px] text-text-muted">{sub}</p>}
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-[1240px] space-y-4">
-      <div className="rounded-[4px] border border-neutral-200 bg-white px-4 py-2 text-[12px] text-neutral-500">
+      <div className="rounded-panel border border-line bg-white px-4 py-2 text-[12px] text-text-muted">
         Forecast accuracy — each week's FeedSight forecast scored against the realized mandi modal price.
         Compares the served forecast (model blend, or naive fallback) to a pure naive last-price baseline. Lower MAE / higher directional % is better.
       </div>
 
       {alerts.length > 0 && (
-        <div className="rounded-[4px] border border-red-300 bg-red-50 px-4 py-2.5 text-[12.5px] text-red-700">
+        <div className="rounded-panel border border-red-300 bg-red-50 px-4 py-2.5 text-[12.5px] text-negative">
           ⚠ <b>Underperformance alert:</b> over the trailing 12 weeks the model is NOT beating naive for{' '}
           {alerts.map((a) => `${a.crop ? a.crop + ' ' : ''}${HZ[a.horizon]}`).join(', ')}. Consider a retrain
           (<code>monthly_retrain.sh</code>) — it will keep the new model only if it passes the gate.
@@ -76,7 +75,7 @@ export default function FeedSightAccuracy() {
       )}
 
       {/* 12-week headline */}
-      <div className="flex flex-wrap rounded-[4px] border border-neutral-200 bg-white">
+      <div className="flex flex-wrap rounded-panel border border-line bg-white">
         {loading ? <div className="h-[58px] w-full animate-pulse bg-neutral-100" /> : (
           <>
             {['next_week', 'next_4w'].map((h) => {
@@ -95,13 +94,13 @@ export default function FeedSightAccuracy() {
           </>
         )}
       </div>
-      {err && <div className="rounded-[4px] border border-red-200 bg-red-50 px-4 py-2 text-[12px] text-red-600">Failed to load accuracy: {err}. (Has the scorer run yet?)</div>}
+      {err && <div className="rounded-panel border border-red-200 bg-red-50 px-4 py-2 text-[12px] text-negative">Failed to load accuracy: {err}. (Has the scorer run yet?)</div>}
 
       {/* rolling 4w/12w */}
-      <div className="rounded-[4px] border border-neutral-200 bg-white">
-        <div className="border-b border-neutral-200 px-4 py-2 text-[13px] font-bold">Rolling accuracy — model vs naive</div>
+      <div className="rounded-panel border border-line bg-white">
+        <div className="border-b border-line px-4 py-2 text-[13px] font-bold">Rolling accuracy — model vs naive</div>
         <table className="w-full text-[12.5px]">
-          <thead><tr className="border-b border-neutral-200 text-left text-[10.5px] uppercase tracking-wider text-neutral-500">
+          <thead><tr className="border-b border-line micro-label text-left text-[9.5px] text-text-muted">
             <th className="px-3 py-1.5">Window</th><th className="px-3 py-1.5">Horizon</th>
             <th className="px-3 py-1.5 text-right">Model MAE</th><th className="px-3 py-1.5 text-right">Naive MAE</th>
             <th className="px-3 py-1.5 text-right">vs naive</th><th className="px-3 py-1.5 text-right">Dir. acc</th>
@@ -109,25 +108,25 @@ export default function FeedSightAccuracy() {
           </tr></thead>
           <tbody>
             {(rolling || []).sort((a, b) => (a.window + a.horizon).localeCompare(b.window + b.horizon)).map((x, i) => (
-              <tr key={i} className="border-b border-neutral-100 last:border-0">
+              <tr key={i} className="border-b border-line/60 last:border-0">
                 <td className="px-3 py-1.5">{x.window}</td><td className="px-3 py-1.5">{HZ[x.horizon]}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(x.model_mae)}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums text-neutral-500">₹{fmt(x.naive_mae)}</td>
-                <td className={`px-3 py-1.5 text-right font-semibold tabular-nums ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">{x.dir_acc_pct == null ? '--' : `${x.dir_acc_pct}%`}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums text-neutral-400">{fmt(x.n, 0)}</td>
+                <td className="px-3 py-1.5 num text-right">₹{fmt(x.model_mae)}</td>
+                <td className="px-3 py-1.5 num text-right text-text-muted">₹{fmt(x.naive_mae)}</td>
+                <td className={`px-3 py-1.5 num text-right font-semibold ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
+                <td className="px-3 py-1.5 num text-right">{x.dir_acc_pct == null ? '--' : `${x.dir_acc_pct}%`}</td>
+                <td className="px-3 py-1.5 num text-right text-text-muted">{fmt(x.n, 0)}</td>
               </tr>
             ))}
-            {!loading && !(rolling || []).length && <tr><td colSpan="7" className="px-3 py-4 text-neutral-400">No outcomes scored yet — run <code>score_outcomes.py</code>.</td></tr>}
+            {!loading && !(rolling || []).length && <tr><td colSpan="7" className="px-3 py-4 text-text-muted">No outcomes scored yet — run <code>score_outcomes.py</code>.</td></tr>}
           </tbody>
         </table>
       </div>
 
       {/* by crop x horizon (all-time) */}
-      <div className="rounded-[4px] border border-neutral-200 bg-white">
-        <div className="border-b border-neutral-200 px-4 py-2 text-[13px] font-bold">By crop &amp; horizon</div>
+      <div className="rounded-panel border border-line bg-white">
+        <div className="border-b border-line px-4 py-2 text-[13px] font-bold">By crop &amp; horizon</div>
         <table className="w-full text-[12.5px]">
-          <thead><tr className="border-b border-neutral-200 text-left text-[10.5px] uppercase tracking-wider text-neutral-500">
+          <thead><tr className="border-b border-line micro-label text-left text-[9.5px] text-text-muted">
             <th className="px-3 py-1.5">Crop</th><th className="px-3 py-1.5">Horizon</th>
             <th className="px-3 py-1.5 text-right">Model MAE</th><th className="px-3 py-1.5 text-right">Naive MAE</th>
             <th className="px-3 py-1.5 text-right">MAPE</th><th className="px-3 py-1.5 text-right">Dir. acc</th>
@@ -135,13 +134,13 @@ export default function FeedSightAccuracy() {
           </tr></thead>
           <tbody>
             {(byCrop || []).map((x, i) => (
-              <tr key={i} className="border-b border-neutral-100 last:border-0">
+              <tr key={i} className="border-b border-line/60 last:border-0">
                 <td className="px-3 py-1.5">{x.crop}</td><td className="px-3 py-1.5">{HZ[x.horizon]}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(x.model_mae)}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums text-neutral-500">₹{fmt(x.naive_mae)}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">{x.model_mape == null ? '--' : `${x.model_mape}%`}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">{x.dir_acc_pct == null ? '--' : `${x.dir_acc_pct}%`}</td>
-                <td className={`px-3 py-1.5 text-right font-semibold tabular-nums ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
+                <td className="px-3 py-1.5 num text-right">₹{fmt(x.model_mae)}</td>
+                <td className="px-3 py-1.5 num text-right text-text-muted">₹{fmt(x.naive_mae)}</td>
+                <td className="px-3 py-1.5 num text-right">{x.model_mape == null ? '--' : `${x.model_mape}%`}</td>
+                <td className="px-3 py-1.5 num text-right">{x.dir_acc_pct == null ? '--' : `${x.dir_acc_pct}%`}</td>
+                <td className={`px-3 py-1.5 num text-right font-semibold ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
               </tr>
             ))}
           </tbody>
@@ -149,51 +148,51 @@ export default function FeedSightAccuracy() {
       </div>
 
       {/* by state + markets (12w), filterable */}
-      <div className="rounded-[4px] border border-neutral-200 bg-white">
-        <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 px-4 py-2 text-[12px]">
+      <div className="rounded-panel border border-line bg-white">
+        <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2 text-[12px]">
           <span className="text-[13px] font-bold">By state &amp; market (last 12 weeks)</span>
           <div className="ml-auto flex items-center gap-2">
-            <select value={crop} onChange={(e) => setCrop(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={crop} onChange={(e) => setCrop(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="">All crops</option><option>Soybean</option><option>Maize</option></select>
-            <select value={hz} onChange={(e) => setHz(e.target.value)} className="rounded-[4px] border border-neutral-200 px-2 py-1">
+            <select value={hz} onChange={(e) => setHz(e.target.value)} className="rounded-panel border border-line px-2 py-1">
               <option value="next_week">Next week</option><option value="next_4w">Next 4 weeks</option></select>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-0 md:grid-cols-2">
-          <div className="border-r border-neutral-200">
-            <div className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-400">States</div>
+          <div className="border-r border-line">
+            <div className="px-4 py-1.5 micro-label text-[10px] text-text-muted">States</div>
             <div className="max-h-[320px] overflow-y-auto">
               <table className="w-full text-[12.5px]"><tbody>
                 {stateRows.map((x, i) => (
-                  <tr key={i} className="border-b border-neutral-100">
+                  <tr key={i} className="border-b border-line/60">
                     <td className="px-3 py-1.5">{x.state}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(x.model_mae)}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-neutral-500">vs ₹{fmt(x.naive_mae)}</td>
-                    <td className={`px-3 py-1.5 text-right font-semibold tabular-nums ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
+                    <td className="px-3 py-1.5 num text-right">₹{fmt(x.model_mae)}</td>
+                    <td className="px-3 py-1.5 num text-right text-text-muted">vs ₹{fmt(x.naive_mae)}</td>
+                    <td className={`px-3 py-1.5 num text-right font-semibold ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
                   </tr>
                 ))}
-                {!stateRows.length && <tr><td className="px-3 py-3 text-neutral-400">no data</td></tr>}
+                {!stateRows.length && <tr><td className="px-3 py-3 text-text-muted">no data</td></tr>}
               </tbody></table>
             </div>
           </div>
           <div>
-            <div className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-400">Top markets (by volume)</div>
+            <div className="px-4 py-1.5 micro-label text-[10px] text-text-muted">Top markets (by volume)</div>
             <div className="max-h-[320px] overflow-y-auto">
               <table className="w-full text-[12.5px]"><tbody>
                 {marketRows.slice(0, 60).map((x, i) => (
-                  <tr key={i} className="border-b border-neutral-100">
-                    <td className="px-3 py-1.5">{x.market} <span className="text-neutral-400">· {x.state}</span></td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">₹{fmt(x.model_mae)}</td>
-                    <td className={`px-3 py-1.5 text-right font-semibold tabular-nums ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-neutral-400">{x.dir_acc_pct == null ? '--' : `${x.dir_acc_pct}%`}</td>
+                  <tr key={i} className="border-b border-line/60">
+                    <td className="px-3 py-1.5">{x.market} <span className="text-text-muted">· {x.state}</span></td>
+                    <td className="px-3 py-1.5 num text-right">₹{fmt(x.model_mae)}</td>
+                    <td className={`px-3 py-1.5 num text-right font-semibold ${beatsCls(x.beats_naive)}`}>{better(x.model_mae, x.naive_mae)}%</td>
+                    <td className="px-3 py-1.5 num text-right text-text-muted">{x.dir_acc_pct == null ? '--' : `${x.dir_acc_pct}%`}</td>
                   </tr>
                 ))}
-                {!marketRows.length && <tr><td className="px-3 py-3 text-neutral-400">no data</td></tr>}
+                {!marketRows.length && <tr><td className="px-3 py-3 text-text-muted">no data</td></tr>}
               </tbody></table>
             </div>
           </div>
         </div>
-        <div className="border-t border-neutral-200 px-4 py-1.5 text-[11px] text-neutral-400">
+        <div className="border-t border-line px-4 py-1.5 text-[11px] text-text-muted">
           "vs naive" = % lower MAE than the naive last-price baseline (green = model better). ₹ = INR/quintal.
         </div>
       </div>
