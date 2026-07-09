@@ -39,17 +39,27 @@ function UtilityBar() {
   );
 
   return (
-    <div className="ticker-viewport h-8 overflow-hidden bg-navy text-[11.5px] num">
+    <div className="ticker-viewport sticky top-0 z-[60] flex h-9 items-center overflow-hidden bg-navy text-[11.5px] num">
+      <span className="micro-label z-10 flex h-9 shrink-0 items-center gap-2 bg-navy pl-5 pr-4 text-[10px] text-white/70">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        </span>
+        NECC Zone Rates · Live
+      </span>
       {items ? (
-        <div className="ticker-track h-8 items-center whitespace-nowrap">
+        <div className="ticker-track h-9 items-center whitespace-nowrap">
           {items.map(entry)}
           {items.map((z) => entry({ ...z, zone: `${z.zone} ` }))}
         </div>
       ) : (
-        <div className="flex h-8 items-center px-5 text-white/60">
-          NECC MARKET DATA · UPDATED 2× DAILY · 06:00 / 14:00 IST
+        <div className="flex h-9 flex-1 items-center px-2 text-white/60">
+          UPDATED 2× DAILY · 06:00 / 14:00 IST
         </div>
       )}
+      <Link to="/forecast" className="micro-label z-10 hidden h-9 shrink-0 items-center bg-navy pl-4 pr-5 text-[10px] text-white/70 hover:text-white sm:flex">
+        Full forecast →
+      </Link>
     </div>
   );
 }
@@ -135,7 +145,7 @@ export default function Layout({
       <UtilityBar />
 
       {/* NAVIGATION */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-white/90 backdrop-blur-md">
+      <nav className="sticky top-9 z-50 border-b border-border bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
           <Link to="/" className="flex items-center gap-2.5">
             <img src="/logo.png" alt="CEFPL Logo" className="h-11 w-auto" />
@@ -296,77 +306,51 @@ export default function Layout({
         <Outlet context={{ user, setShowLoginModal }} />
       </main>
 
-      {/* CTA BAND */}
-      <section className="border-t border-border bg-bg-alt px-6 py-14">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 border-l-2 border-accent pl-6 md:flex-row md:items-center md:justify-between md:pl-8">
-          <div className="space-y-2">
-            <p className="micro-label text-[11px] text-accent">Team Access</p>
-            <h2 className="text-display text-2xl font-bold md:text-3xl">The full EggSight terminal, for the CEFPL team.</h2>
-            <p className="text-body max-w-xl text-[15px] text-text-muted">
-              Zone tables, model forecasts with confidence bands, feed costs, and the AI market analyst — for authorized managers and supervisors.
-            </p>
-          </div>
-          {user ? (
-            <Link
-              to="/app"
-              className="inline-block shrink-0 rounded-card bg-accent px-7 py-3.5 text-center text-[15.5px] font-semibold text-white shadow-airtable transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.97]"
-            >
-              Open Portal
-            </Link>
-          ) : (
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="inline-block shrink-0 cursor-pointer rounded-card bg-accent px-7 py-3.5 text-[15.5px] font-semibold text-white shadow-airtable transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.97]"
-            >
-              Sign In to Access
-            </button>
-          )}
-        </div>
-      </section>
-
       {/* FOOTER */}
       <footer className="mt-auto bg-ink px-6 text-white">
         <div className="mx-auto grid max-w-7xl gap-10 py-14 md:grid-cols-4">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <span className="text-body font-bold">Chatrapati Egg Farms Pvt Ltd</span>
             <p className="max-w-xs text-[14px] leading-relaxed text-white/55">
-              Data-driven layer farming.<br />Solapur, Maharashtra.
+              Layer farming and market intelligence, run from Solapur, Maharashtra. EggSight is CEFPL's daily business cockpit.
+            </p>
+            <p className="micro-label flex items-center gap-2 text-[10px] text-white/55">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              </span>
+              Market data live
             </p>
           </div>
           <div>
-            <p className="micro-label mb-3 text-[11px] text-white/45">Explore</p>
+            <p className="micro-label mb-3 text-[11px] text-white/45">Platform</p>
             <ul className="space-y-2 text-[14px] font-medium">
-              <li><a href="/#platform" className="text-white/65 hover:text-white">Platform modules</a></li>
-              <li><Link to="/forecast" className="text-white/65 hover:text-white">Live egg price forecast</Link></li>
-              <li><Link to="/app" className="text-white/65 hover:text-white">Team portal</Link></li>
+              <li><Link to="/forecast" className="text-white/65 hover:text-white">Live Forecast</Link></li>
+              <li><Link to="/app" className="text-white/65 hover:text-white">EggSight Terminal</Link></li>
+              <li><Link to="/app/analyst" className="text-white/65 hover:text-white">AI Market Analyst</Link></li>
             </ul>
           </div>
           <div>
             <p className="micro-label mb-3 text-[11px] text-white/45">Data</p>
             <ul className="space-y-2 text-[14px] font-medium text-white/65">
-              <li>NECC rates, 37 zones, 2× daily</li>
-              <li>1 / 7 / 14-day AI forecasts</li>
-              <li>Price history since 2009</li>
+              <li>NECC zone rates · 37 zones</li>
+              <li>Feed spot prices · Solapur mandi</li>
+              <li>Weather · Open-Meteo</li>
             </ul>
           </div>
           <div>
-            <p className="micro-label mb-3 text-[11px] text-white/45">Model</p>
+            <p className="micro-label mb-3 text-[11px] text-white/45">Company</p>
             <ul className="space-y-2 text-[14px] font-medium text-white/65">
-              <li>Trained on 17 years of NECC data</li>
-              <li>Accuracy tracked against actuals</li>
-              <li>Statistical estimates, not advice</li>
+              <li>Solapur, Maharashtra</li>
+              <li><a href="mailto:contact@cefpl.in" className="hover:text-white">contact@cefpl.in</a></li>
             </ul>
           </div>
         </div>
         <div className="border-t border-white/10">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 py-5 text-[13px] font-medium text-white/45">
-            <span>© 2026 Chatrapati Egg Farms Pvt Ltd. All rights reserved.</span>
-            <span className="num flex items-center gap-2 text-[12px]">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              </span>
-              MARKETS LIVE · UPDATED 2× DAILY
+            <span>© 2026 Chatrapati Egg Farms Pvt Ltd</span>
+            <span className="text-[12.5px]">
+              Forecasts are statistical estimates — not trading advice. Portal access restricted to authorized CEFPL team members.
             </span>
           </div>
         </div>

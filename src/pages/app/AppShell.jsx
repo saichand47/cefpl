@@ -70,8 +70,11 @@ function MarketPulse() {
           {items.map((it) => entry(it, true))}
         </div>
       ) : (
-        <span className="text-white/35">Loading market data…</span>
+        <span className="flex-1 text-white/35">Loading market data…</span>
       )}
+      <span className="micro-label z-10 hidden h-8 shrink-0 items-center bg-ink pl-5 pr-4 text-[9.5px] text-white/45 sm:flex">
+        UPD 06:00 IST
+      </span>
     </div>
   );
 }
@@ -161,7 +164,7 @@ export default function AppShell({ user, loading, handleLogout }) {
   if (!user) return <Navigate to="/" replace />;
 
   return (
-    <div className="portal flex min-h-screen flex-col bg-bg font-sans text-text-main">
+    <div className="portal flex min-h-screen flex-col bg-portal-bg font-sans text-text-main">
       <MarketPulse />
       <CommandPalette key={paletteOpen ? 'open' : 'closed'} open={paletteOpen} setOpen={setPaletteOpen} />
       <div className="flex flex-1">
@@ -198,18 +201,17 @@ export default function AppShell({ user, loading, handleLogout }) {
             ))}
           </nav>
 
-          <div className="border-t border-line px-4 py-2.5">
-            <p className="truncate text-[12px] font-semibold">{user.email}</p>
-            <div className="mt-1 flex items-center justify-between">
-              <span className={`micro-label rounded-chip px-1.5 py-0.5 text-[9px] ${
-                profile?.role === 'admin' ? 'bg-accent/10 text-accent-hover' : 'bg-neutral-100 text-text-muted'
-              }`}>
-                {profile?.role || '…'}
-              </span>
-              <button onClick={handleLogout} className="flex cursor-pointer items-center gap-1 text-[11.5px] font-medium text-text-muted hover:text-negative">
-                <LogOut size={12} /> Sign out
-              </button>
+          <div className="flex items-center gap-2.5 border-t border-line px-4 py-2.5">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-[12px] font-bold text-accent-hover">
+              {(user.email || '?')[0].toUpperCase()}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-semibold">{user.email}</p>
+              <p className="num text-[10px] capitalize text-text-muted">{profile?.role || '…'} · Solapur</p>
             </div>
+            <button onClick={handleLogout} title="Sign out" className="cursor-pointer text-text-muted hover:text-negative">
+              <LogOut size={13} />
+            </button>
           </div>
         </aside>
 

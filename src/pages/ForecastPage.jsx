@@ -22,8 +22,8 @@ function signalMeta(signal) {
     return {
       label: 'Bullish',
       tint: 'border-emerald-200 bg-emerald-50/60',
-      text: 'text-positive',
-      explain: 'The model expects prices to rise — recent momentum and cross-zone strength point higher over the forecast window.',
+      text: 'text-positive-strong',
+      explain: 'Model expects prices to rise over the next 7–14 days. Sellers may benefit from holding stock.',
     };
   }
   if (signal === 'bearish') {
@@ -31,12 +31,12 @@ function signalMeta(signal) {
       label: 'Bearish',
       tint: 'border-red-200 bg-red-50/60',
       text: 'text-negative',
-      explain: 'The model expects prices to ease — recent weakness across the market points lower over the forecast window.',
+      explain: 'Model expects prices to fall over the next 7–14 days. Consider selling sooner rather than later.',
     };
   }
   return {
     label: 'Neutral',
-    tint: 'border-border bg-bg-alt',
+    tint: 'border-border bg-neutral-100/60',
     text: 'text-text-secondary',
     explain: 'No clear direction — recent volatility is high, so the model stays close to today\'s price.',
   };
@@ -268,12 +268,12 @@ function ForecastReasoning({ forecast, apiBase }) {
 
 function KpiCard({ label, price, change, mae }) {
   return (
-    <div className="rounded-card border border-border bg-white p-5 shadow-airtable">
+    <div className="rounded-card border border-border bg-white p-5 shadow-card">
       <p className="micro-label text-[10.5px] text-text-muted">{label}</p>
-      <p className="num mt-3 text-3xl font-semibold text-text-main">₹{formatPrice(price)}</p>
+      <p className="num mt-3 text-[26px] font-semibold leading-tight text-text-main">₹{formatPrice(price)}</p>
       <div className="num mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]">
         {change != null ? (
-          <span className={`font-semibold ${change > 0 ? 'text-positive' : change < 0 ? 'text-negative' : 'text-text-muted'}`}>
+          <span className={`font-semibold ${change > 0 ? 'text-positive-strong' : change < 0 ? 'text-negative' : 'text-text-muted'}`}>
             {change >= 0 ? '+' : '−'}{formatPrice(Math.abs(change))}
           </span>
         ) : (
@@ -281,6 +281,47 @@ function KpiCard({ label, price, change, mae }) {
         )}
         {mae != null && <span className="text-[11.5px] text-text-muted">±₹{Number(mae).toFixed(0)} typical</span>}
       </div>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-card border border-border bg-white p-5 shadow-card">
+            <div className="shimmer h-3 w-20 rounded" />
+            <div className="shimmer mt-4 h-7 w-24 rounded" />
+            <div className="shimmer mt-3 h-3 w-16 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-card border border-border bg-white p-5 shadow-card">
+        <div className="shimmer h-72 rounded-card" />
+      </div>
+      <p className="num text-center text-[10.5px] text-text-muted">FETCHING LIVE NECC DATA — API.CEFPL.IN</p>
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }) {
+  return (
+    <div className="mx-auto max-w-lg rounded-card border border-border bg-white p-8 text-center shadow-card">
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+        <CircleAlert size={22} />
+      </div>
+      <h2 className="text-display mt-4 text-xl font-bold text-text-main">Couldn't reach the forecast service</h2>
+      <p className="mt-2 text-[14px] leading-relaxed text-text-muted">
+        api.cefpl.in didn't respond. Your connection may be offline, or the service is briefly down.
+      </p>
+      <button
+        onClick={onRetry}
+        className="mt-5 inline-block cursor-pointer rounded-card bg-accent px-6 py-3 text-[14.5px] font-semibold text-white shadow-airtable transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.97]"
+      >
+        Retry now
+      </button>
+      <p className="num mt-4 text-[10px] text-text-muted">SOURCE: API.CEFPL.IN · UPDATED 2× DAILY</p>
     </div>
   );
 }
@@ -379,58 +420,48 @@ export default function ForecastPage() {
             </div>
           </div>
 
-          {error && (
-            <div className="flex items-start gap-3 rounded-card border border-amber-200 bg-amber-50 p-4 text-amber-800">
-              <CircleAlert size={20} className="mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Forecast service is not reachable</p>
-                <p className="mt-1 text-sm leading-relaxed">
-                  Start the API locally or set <span className="font-mono">VITE_EGGSIGHT_API_URL</span> to the deployed API URL. Current target: <span className="font-mono">{API_BASE}</span>.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* KPI row: forecasts with signed change AND honest ±₹ typical error */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {loading && !forecast ? (
+            <LoadingState />
+          ) : error && !forecast ? (
+            <ErrorState onRetry={loadForecast} />
+          ) : (
+            <>
+          {/* KPI row: forecasts with signed change, ±₹ typical error, and the signal card */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <KpiCard label="Current Price" price={forecast?.current_price} change={null} mae={null} />
             <KpiCard label="1-Day Forecast" price={forecast?.forecast?.['1_day']?.price} change={forecast?.forecast?.['1_day']?.change} mae={accuracy?.mae_1d} />
             <KpiCard label="7-Day Forecast" price={forecast?.forecast?.['7_day']?.price} change={forecast?.forecast?.['7_day']?.change} mae={accuracy?.mae_7d} />
             <KpiCard label="14-Day Forecast" price={forecast?.forecast?.['14_day']?.price} change={forecast?.forecast?.['14_day']?.change} mae={accuracy?.mae_14d} />
-          </div>
 
-          {/* Signal card explains itself */}
-          <div className={`rounded-card border px-6 py-5 ${signal.tint}`}>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="micro-label text-[10.5px] text-text-muted">Model Signal</p>
-                <p className={`text-display mt-1 text-3xl font-bold ${forecast ? signal.text : 'text-text-muted'}`}>
-                  {forecast ? signal.label : '--'}
-                </p>
-              </div>
-              <div className="flex items-center gap-5">
+            {/* Signal card explains itself */}
+            <div className={`rounded-card border p-5 ${signal.tint}`}>
+              <p className="micro-label text-[10.5px] text-text-muted">Model Signal</p>
+              <p className={`text-display mt-2 text-[22px] font-bold leading-tight ${forecast ? signal.text : 'text-text-muted'}`}>
+                {forecast ? signal.label : '--'}
+              </p>
+              <div className="mt-2.5 flex items-center gap-3">
                 {SIGNALS.map((s) => {
-                  const active = forecast?.signal === s.key || (!forecast?.signal && s.key === 'neutral' && forecast);
+                  const active = forecast?.signal === s.key;
                   return (
-                    <span key={s.key} className={`micro-label flex items-center gap-1.5 text-[10px] ${active ? 'text-text-main' : 'text-text-muted opacity-40'}`}>
-                      <span className={`h-2 w-2 rounded-full ${s.dot} ${active ? '' : 'opacity-40'}`} />
+                    <span key={s.key} className={`micro-label flex items-center gap-1 text-[9px] ${active ? 'text-text-main' : 'text-text-muted opacity-40'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot} ${active ? '' : 'opacity-40'}`} />
                       {s.label}
                     </span>
                   );
                 })}
               </div>
+              {forecast && <p className="mt-2.5 text-[12px] leading-relaxed text-text-secondary">{signal.explain}</p>}
             </div>
-            {forecast && <p className="mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary">{signal.explain}</p>}
           </div>
 
           <ForecastReasoning forecast={forecast} apiBase={API_BASE} />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
-            <div className="rounded-card border border-border bg-white p-5 shadow-airtable">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+            <div className="rounded-card border border-border bg-white p-5 shadow-card">
               <PriceHistoryChart apiBase={API_BASE} />
             </div>
 
-            <div className="rounded-card border border-border bg-white p-5 shadow-airtable">
+            <div className="rounded-card border border-border bg-white p-5 shadow-card">
               <h2 className="text-display text-xl font-bold text-text-main">Latest Values</h2>
               <div className="mt-5 max-h-72 space-y-3 overflow-auto pr-1">
                 {(forecast?.history || []).slice(-10).reverse().map((item) => (
@@ -451,13 +482,15 @@ export default function ForecastPage() {
           {/* Honest-metrics disclaimer */}
           <div className="border-t border-border pt-5">
             <p className="max-w-4xl text-[12.5px] leading-relaxed text-text-muted">
-              Forecasts are statistical estimates based on historical NECC price patterns — not trading
-              advice. Typical error (±₹) is the trailing-30-day mean absolute error per horizon.
+              Forecasts are statistical estimates based on NECC price history and market indicators — not
+              trading advice. Typical error (±₹) is the trailing-30-day mean absolute error per horizon.
               {accuracy?.mape_1d != null && (
                 <span className="num"> Model accuracy: MAPE {accuracy.mape_1d}% (1D){accuracy.mape_7d != null ? ` · ${accuracy.mape_7d}% (7D)` : ''} over {accuracy.total_forecasts_evaluated} evaluated forecasts.</span>
               )}
             </p>
           </div>
+            </>
+          )}
         </MotionDiv>
       </div>
     </section>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { NavLink, useSearchParams } from 'react-router-dom';
+import { supabase } from '../../supabaseClient';
 
 const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
 const fmt = (n, d = 1) => (n == null ? '--' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: d }));
@@ -156,8 +157,118 @@ function ForecastChart({ history, full, range }) {
   );
 }
 
+/* ── Right column: feed costs / volatility / analyst insight ─────── */
+function FeedCostsPanel() {
+  const [mats, setMats] = useState(null);
+  useEffect(() => {
+    let active = true;
+    supabase.from('raw_material_prices').select('material, price_per_kg, recorded_on')
+      .order('recorded_on', { ascending: false }).limit(40)
+      .then(({ data }) => { if (active) setMats(data || []); });
+    return () => { active = false; };
+  }, []);
+
+  const rows = useMemo(() => {
+    if (!mats) return null;
+    return [
+      { id: 'soybean_meal', label: 'Soybean meal (DOC)' },
+      { id: 'maize', label: 'Maize' },
+    ].map(({ id, label }) => {
+      const entries = mats.filter((m) => m.material === id);
+      const latest = entries[0], prev = entries[1];
+      const delta = latest && prev ? Number(latest.price_per_kg) - Number(prev.price_per_kg) : null;
+      return { label, price: latest ? Number(latest.price_per_kg) : null, delta };
+    }).filter((r) => r.price != null);
+  }, [mats]);
+
+  return (
+    <div className="rounded-panel border border-line bg-white">
+      <div className="flex items-baseline justify-between border-b border-line px-4 py-2">
+        <h3 className="text-[13px] font-bold">Feed costs</h3>
+        <span className="micro-label text-[9px] text-text-muted">Solapur mandi</span>
+      </div>
+      <div className="px-4 py-1">
+        {rows == null ? (
+          <div className="my-2 h-10 animate-pulse rounded bg-neutral-100" />
+        ) : rows.length ? rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between border-b border-line/60 py-2 last:border-0">
+            <span className="text-[12.5px] text-text-secondary">{r.label}</span>
+            <span className="num text-[12.5px] font-semibold">
+              ₹{r.price.toFixed(1)}/kg
+              {r.delta != null && r.delta !== 0 && (
+                <span className={`ml-1.5 ${r.delta > 0 ? 'text-negative' : 'text-positive'}`}>
+                  {r.delta > 0 ? '▲' : '▼'}{Math.abs(r.delta).toFixed(1)}
+                </span>
+              )}
+            </span>
+          </div>
+        )) : (
+          <p className="py-3 text-[12px] text-text-muted">No quotes yet — add them under Feed Costs.</p>
+        )}
+      </div>
+      <NavLink to="/app/raw-materials" className="block border-t border-line px-4 py-2 text-[12px] font-semibold text-accent hover:text-accent-hover">
+        Open Feed Costs →
+      </NavLink>
+    </div>
+  );
+}
+
+function VolatilityPanel({ context }) {
+  const vol = context?.volatility;
+  if (!vol?.last30) return null;
+  const ratio = vol.prev30 ? vol.last30 / vol.prev30 : null;
+  const elevated = ratio != null && ratio >= 1.3;
+  return (
+    <div className="rounded-panel border border-line bg-white">
+      <div className="flex items-baseline justify-between border-b border-line px-4 py-2">
+        <h3 className="text-[13px] font-bold">Volatility</h3>
+        <span className="micro-label text-[9px] text-text-muted">30-day σ</span>
+      </div>
+      <div className="px-4 py-3">
+        <div className="flex items-baseline gap-2.5">
+          <span className="num text-[22px] font-semibold leading-none">₹{vol.last30.toFixed(1)}</span>
+          {ratio != null && (
+            <span className={`micro-label rounded-chip px-1.5 py-0.5 text-[9px] ${elevated ? 'bg-amber-50 text-amber-800' : 'bg-neutral-100 text-text-muted'}`}>
+              {ratio.toFixed(1)}× prior month
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
+          Daily swings averaged ₹{vol.last30.toFixed(1)}{vol.prev30 ? ` vs ₹${vol.prev30.toFixed(1)} last month` : ''}.
+          {elevated ? ' Wider swings widen the 7- and 14-day confidence bands.' : ' Stable swings keep the confidence bands tight.'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AnalystInsightPanel({ context, signal }) {
+  const insight = useMemo(() => {
+    if (!context?.change) return null;
+    const d7 = context.change.d7;
+    if (d7 == null) return null;
+    const dir = d7 > 0 ? 'gain' : 'decline';
+    const sig = signal ? `The model holds a ${signal} 7-day view.` : '';
+    return `Hyderabad's ₹${Math.abs(d7)} weekly ${dir} comes with ${context.national_avg ? `the zone trading near the national average (₹${context.national_avg})` : 'mixed cross-zone signals'}. ${sig}`;
+  }, [context, signal]);
+
+  if (!insight) return null;
+  return (
+    <div className="rounded-panel border border-line bg-white">
+      <div className="flex items-baseline justify-between border-b border-line px-4 py-2">
+        <h3 className="text-[13px] font-bold">Analyst insight</h3>
+        <span className="num text-[9.5px] text-text-muted">LIVE CONTEXT</span>
+      </div>
+      <p className="px-4 py-3 text-[12.5px] leading-relaxed text-text-secondary">{insight}</p>
+      <NavLink to="/app/analyst" className="block border-t border-line px-4 py-2 text-[12px] font-semibold text-accent hover:text-accent-hover">
+        Ask the analyst →
+      </NavLink>
+    </div>
+  );
+}
+
 /* ── Dashboard ───────────────────────────────────────────────────── */
-const RANGES = [{ k: '30D', v: 30 }, { k: '90D', v: 90 }, { k: '1Y', v: 365 }];
+const RANGES = [{ k: '30D', v: 30 }, { k: '60D', v: 60 }, { k: '90D', v: 90 }];
 
 export default function MarketDashboard() {
   const [params] = useSearchParams();
@@ -165,6 +276,10 @@ export default function MarketDashboard() {
   const [latest, setLatest] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
   const [history, setHistory] = useState(null);
+  const [context, setContext] = useState(null);
+  const [zoneList, setZoneList] = useState([]);
+  const [zone, setZone] = useState('Hyderabad');
+  const [zoneHistory, setZoneHistory] = useState(null);
   const [range, setRange] = useState(90);
   const [query, setQuery] = useState(params.get('q') || '');
   const [sort, setSort] = useState({ key: 'change_1d', dir: -1 });
@@ -177,7 +292,21 @@ export default function MarketDashboard() {
     fetch(`${API_BASE}/latest`).then((r) => r.json()).then(setLatest).catch(() => {});
     fetch(`${API_BASE}/accuracy`).then((r) => r.json()).then(setAccuracy).catch(() => {});
     fetch(`${API_BASE}/history/Hyderabad?days=400`).then((r) => r.json()).then((d) => setHistory(d.data)).catch(() => {});
+    fetch(`${API_BASE}/analyst/context`).then((r) => r.json()).then(setContext).catch(() => {});
+    fetch(`${API_BASE}/zones`).then((r) => r.json()).then((d) => setZoneList(d.zones || [])).catch(() => {});
   }, []);
+
+  // Non-Hyderabad zones show history only (the model forecasts Hyderabad).
+  useEffect(() => {
+    if (zone === 'Hyderabad') { setZoneHistory(null); return undefined; }
+    let active = true;
+    setZoneHistory(null);
+    fetch(`${API_BASE}/history/${encodeURIComponent(zone)}?days=400`)
+      .then((r) => r.json())
+      .then((d) => { if (active) setZoneHistory(d.data || []); })
+      .catch(() => { if (active) setZoneHistory([]); });
+    return () => { active = false; };
+  }, [zone]);
 
   const spark = useMemo(() => history?.slice(-30).map((d) => d.price), [history]);
 
@@ -224,31 +353,51 @@ export default function MarketDashboard() {
         )}
       </div>
 
-      {/* Main chart */}
-      <div className="rounded-panel border border-line bg-white">
-        <div className="flex items-center justify-between border-b border-line px-4 py-2">
-          <div className="flex items-baseline gap-3">
-            <h2 className="text-[13px] font-bold">Hyderabad — price & forecast</h2>
-            <span className="text-[11px] text-text-muted">₹ per 100 eggs · dashed = model forecast · shaded = 80% confidence</span>
-          </div>
-          <div className="flex rounded-panel border border-line">
-            {RANGES.map((r) => (
-              <button
-                key={r.k} onClick={() => setRange(r.v)}
-                className={`num cursor-pointer px-2.5 py-1 text-[11px] font-semibold transition-colors ${range === r.v ? 'bg-accent text-white' : 'text-text-muted hover:text-text-main'}`}
+      {/* Main chart + right column */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+        <div className="rounded-panel border border-line bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <select
+                value={zone} onChange={(e) => setZone(e.target.value)}
+                className="rounded-panel border border-line px-2 py-1 text-[12.5px] font-bold outline-none focus:border-accent"
               >
-                {r.k}
-              </button>
-            ))}
+                {(zoneList.length ? zoneList : ['Hyderabad']).map((z) => <option key={z}>{z}</option>)}
+              </select>
+              <span className="text-[11px] text-text-muted">
+                ₹ per 100 eggs{zone === 'Hyderabad' ? ' · dashed = model forecast · shaded = 80% confidence' : ' · history only (forecast covers Hyderabad)'}
+              </span>
+            </div>
+            <div className="flex rounded-panel border border-line">
+              {RANGES.map((r) => (
+                <button
+                  key={r.k} onClick={() => setRange(r.v)}
+                  className={`num cursor-pointer px-2.5 py-1 text-[11px] font-semibold transition-colors ${range === r.v ? 'bg-accent text-white' : 'text-text-muted hover:text-text-main'}`}
+                >
+                  {r.k}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="px-2 py-2">
+            <ForecastChart
+              history={zone === 'Hyderabad' ? history : zoneHistory}
+              full={zone === 'Hyderabad' ? full : null}
+              range={range}
+            />
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-line px-4 py-1.5 text-[11px] text-text-muted">
+            {accuracy?.mape_1d != null
+              ? <><span>1D MAPE <b className="num font-semibold text-text-secondary">{accuracy.mape_1d}%</b></span><span>1D MAE <b className="num font-semibold text-text-secondary">₹{accuracy.mae_1d}</b></span>{accuracy.mape_7d != null && <span>7D MAPE <b className="num font-semibold text-text-secondary">{accuracy.mape_7d}%</b></span>}<span>{accuracy.total_forecasts_evaluated} forecasts evaluated</span></>
+              : <span>Model accuracy appears after forecasts are evaluated against actuals.</span>}
+            <span className="num ml-auto text-[10px]">SOURCE: NECC · UPD 06:00 IST</span>
           </div>
         </div>
-        <div className="px-2 py-2">
-          <ForecastChart history={history} full={full} range={range} />
-        </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-line px-4 py-1.5 text-[11px] text-text-muted">
-          {accuracy?.mape_1d != null
-            ? <><span>1D MAPE <b className="num font-semibold text-text-secondary">{accuracy.mape_1d}%</b></span><span>1D MAE <b className="num font-semibold text-text-secondary">₹{accuracy.mae_1d}</b></span>{accuracy.mape_7d != null && <span>7D MAPE <b className="num font-semibold text-text-secondary">{accuracy.mape_7d}%</b></span>}<span>{accuracy.total_forecasts_evaluated} forecasts evaluated</span></>
-            : <span>Model accuracy appears after forecasts are evaluated against actuals.</span>}
+
+        <div className="space-y-4">
+          <FeedCostsPanel />
+          <VolatilityPanel context={context} />
+          <AnalystInsightPanel context={context} signal={full?.signal} />
         </div>
       </div>
 
@@ -261,7 +410,7 @@ export default function MarketDashboard() {
             className="w-40 rounded-panel border border-line px-2 py-1 text-[12px] outline-none focus:border-accent"
           />
         </div>
-        <div className="max-h-[380px] overflow-y-auto">
+        <div className="max-h-[320px] overflow-y-auto">
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="border-b border-line">
@@ -285,6 +434,10 @@ export default function MarketDashboard() {
           </table>
         </div>
       </div>
+
+      <p className="pb-2 text-[11px] text-text-muted">
+        Forecasts are statistical estimates — not trading advice. Typical error (±₹) is the trailing-30-day MAE per horizon.
+      </p>
     </div>
   );
 }

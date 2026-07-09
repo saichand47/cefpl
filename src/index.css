@@ -7,21 +7,23 @@
  */
 @theme {
   /* Warm paper neutral scale */
-  --color-bg: #fbfaf8;
+  --color-bg: #ffffff;
   --color-bg-alt: #f8f7f3;
+  --color-portal-bg: #fbfaf8;
   --color-surface: #ffffff;
   --color-ink: #1b1915;
-  --color-text-main: #1b1915;
-  --color-text-secondary: #44403a;
-  --color-text-muted: #6f6a61;
+  --color-text-main: #1d1b16;
+  --color-text-secondary: #3a372f;
+  --color-text-muted: rgba(30, 27, 18, 0.64);
   --color-border: #e5e2dc;
   --color-line: #e9e7e1; /* portal hairlines */
-  --color-neutral-100: #f1efe9; /* pill hover */
+  --color-neutral-100: #f4f3ef; /* pill hover */
 
   /* One accent */
   --color-accent: #047857;
   --color-accent-hover: #065f46;
-  --color-positive: #047857;
+  --color-positive: #059669;
+  --color-positive-strong: #047857;
   --color-negative: #dc2626;
   --color-forecast: #059669;
 
@@ -38,11 +40,13 @@
   --radius-card: 8px;
   --radius-feature: 12px;
   --radius-modal: 16px;
+  --radius-pill: 9999px;
 
   /* Neutral, shallow (ink-tinted) elevation — portal uses hairlines, no shadows */
-  --shadow-airtable: rgba(27, 25, 21, 0.22) 0px 0px 1px, rgba(27, 25, 21, 0.06) 0px 1px 2px, rgba(27, 25, 21, 0.08) 0px 2px 6px;
-  --shadow-soft: rgba(27, 25, 21, 0.05) 0px 2px 16px;
-  --shadow-modal: rgba(27, 25, 21, 0.24) 0px 0px 1px, rgba(27, 25, 21, 0.10) 0px 8px 24px, rgba(27, 25, 21, 0.14) 0px 24px 56px;
+  --shadow-airtable: rgba(29, 27, 22, 0.30) 0px 0px 1px, rgba(29, 27, 22, 0.07) 0px 1px 2px, rgba(29, 27, 22, 0.07) 0px 2px 6px, rgba(29, 27, 22, 0.05) 0px 0px 0px 0.5px inset;
+  --shadow-soft: rgba(29, 27, 22, 0.05) 0px 0px 20px;
+  --shadow-card: rgba(29, 27, 22, 0.04) 0px 1px 2px, rgba(29, 27, 22, 0.04) 0px 4px 14px;
+  --shadow-modal: rgba(29, 27, 22, 0.18) 0px 24px 60px, rgba(29, 27, 22, 0.10) 0px 8px 24px;
 
   --ease-instrument: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -66,7 +70,7 @@ body {
 }
 
 .text-display {
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .text-body {
@@ -142,6 +146,17 @@ body {
 .flash-up { animation: flash-up 1s var(--ease-instrument); }
 .flash-down { animation: flash-down 1s var(--ease-instrument); }
 
+/* Loading skeleton: 400%-wide gradient sweep */
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f4f3ef 25%, #faf9f6 37%, #f4f3ef 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
 /* Terminal: forecast confidence band — very slow breathing */
 @keyframes band-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .confidence-band { animation: band-breathe 9s ease-in-out infinite; }
@@ -152,4 +167,5 @@ body {
   .draw-on { animation: none; stroke-dashoffset: 0; }
   .flash-up, .flash-down { animation: none; }
   .confidence-band { animation: none; }
+  .shimmer { animation: none; }
 }
