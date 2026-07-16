@@ -164,16 +164,15 @@ export default function FeedSight() {
     ? [...new Set(markets.filter((m) => !state || m.state === state).map((m) => m.district).filter(Boolean))].sort()
     : []), [markets, state]);
 
-  const matchesModelKind = (m) => {
-    if (!modelKind) return true;
-    if (modelKind === 'naive') return isNaiveModel(m.model_used);
-    if (modelKind === 'state') return m.model_used === 'hgb_blend(state_eligible)';
-    if (modelKind === 'model') return m.model_used === 'hgb_blend';
-    return true;
-  };
-
   const filtered = useMemo(() => {
     if (!markets) return [];
+    const matchesModelKind = (m) => {
+      if (!modelKind) return true;
+      if (modelKind === 'naive') return isNaiveModel(m.model_used);
+      if (modelKind === 'state') return m.model_used === 'hgb_blend(state_eligible)';
+      if (modelKind === 'model') return m.model_used === 'hgb_blend';
+      return true;
+    };
     const f = markets.filter((m) =>
       (!crop || m.crop === crop) && (!state || m.state === state) && (!district || m.district === district) &&
       (!q || m.market.toLowerCase().includes(q.toLowerCase())) &&
