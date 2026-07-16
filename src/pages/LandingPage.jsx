@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useOutletContext } from 'react-router-dom';
 import { ChevronRight, ArrowRight } from 'lucide-react';
 import { modulesData } from '../data/modules';
+import { HORIZON_CAUTION } from '../data/forecastReliability';
 
 const MotionDiv = motion.div;
 const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
@@ -91,8 +92,8 @@ function InstrumentCard() {
   const pill = SIGNAL_PILL[data.signal] || SIGNAL_PILL.neutral;
   const horizons = [
     { k: '1-day', d: data.forecast?.['1_day'] },
-    { k: '7-day', d: data.forecast?.['7_day'] },
-    { k: '14-day', d: data.forecast?.['14_day'] },
+    { k: '7-day', d: data.forecast?.['7_day'], caution: HORIZON_CAUTION['7d'] },
+    { k: '14-day', d: data.forecast?.['14_day'], caution: HORIZON_CAUTION['14d'] },
   ];
 
   return (
@@ -142,9 +143,12 @@ function InstrumentCard() {
         )}
 
         <div className="mt-4 grid grid-cols-3 divide-x divide-border border-t border-border">
-          {horizons.map(({ k, d }) => (
-            <div key={k} className="px-3 py-2.5 first:pl-0 last:pr-0">
-              <p className="micro-label text-[10px] text-text-muted">{k}</p>
+          {horizons.map(({ k, d, caution }) => (
+            <div key={k} className="px-3 py-2.5 first:pl-0 last:pr-0" title={caution?.note}>
+              <p className="micro-label text-[10px] text-text-muted">
+                {k}
+                {caution && <span className="ml-1 align-middle text-[8px] text-amber-600">{caution.level === 'experimental' ? 'EXP' : 'IND'}</span>}
+              </p>
               <p className="num mt-0.5 text-[15px] font-semibold text-text-main">₹{fmt(d?.price)}</p>
               <p className={`num text-[11.5px] font-medium ${deltaColor(d?.change)}`}>{sign(d?.change)}</p>
             </div>

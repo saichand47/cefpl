@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
+import { HORIZON_CAUTION } from '../../data/forecastReliability';
 
 const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
 const fmt = (n, d = 1) => (n == null ? '--' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: d }));
@@ -54,14 +55,17 @@ function useFlash(value) {
   return flash;
 }
 
-function Kpi({ label, value, suffix, delta, spark, animate }) {
+function Kpi({ label, value, suffix, delta, spark, animate, caution }) {
   const display = useCountUp(animate ? value : null);
   const shown = animate && display != null ? display : value;
   const flash = useFlash(value);
   return (
-    <div className={`flex min-w-0 flex-1 items-center justify-between gap-2 border-r border-line px-4 py-2.5 last:border-r-0 ${flash}`}>
+    <div className={`flex min-w-0 flex-1 items-center justify-between gap-2 border-r border-line px-4 py-2.5 last:border-r-0 ${flash}`} title={caution?.note}>
       <div className="min-w-0">
-        <p className="micro-label truncate text-[9.5px] text-text-muted">{label}</p>
+        <p className="micro-label truncate text-[9.5px] text-text-muted">
+          {label}
+          {caution && <span className="ml-1 text-[8px] text-amber-600">{caution.level === 'experimental' ? 'EXP' : 'IND'}</span>}
+        </p>
         <div className="flex items-baseline gap-1.5">
           <span className="num text-[19px] font-semibold leading-tight">{value == null ? '--' : `₹${fmt(shown, 1)}`}</span>
           {suffix && <span className="text-[11px] text-text-muted">{suffix}</span>}
@@ -337,8 +341,8 @@ export default function MarketDashboard() {
           <>
             <Kpi label="NECC Hyderabad" value={full.current_price} delta={latest?.zones?.find((z) => z.zone === 'Hyderabad')?.change_1d} spark={spark} animate />
             <Kpi label="1-Day Forecast" value={full.forecast_1d?.predicted_price} delta={full.forecast_1d?.predicted_change} animate />
-            <Kpi label="7-Day Forecast" value={full.forecast_7d?.predicted_price} delta={full.forecast_7d?.predicted_change} animate />
-            <Kpi label="14-Day Forecast" value={full.forecast_14d?.predicted_price} delta={full.forecast_14d?.predicted_change} animate />
+            <Kpi label="7-Day Forecast" value={full.forecast_7d?.predicted_price} delta={full.forecast_7d?.predicted_change} animate caution={HORIZON_CAUTION['7d']} />
+            <Kpi label="14-Day Forecast" value={full.forecast_14d?.predicted_price} delta={full.forecast_14d?.predicted_change} animate caution={HORIZON_CAUTION['14d']} />
             <div className="flex flex-1 items-center justify-between px-4 py-2.5">
               <div>
                 <p className="micro-label text-[9.5px] text-text-muted">Signal</p>

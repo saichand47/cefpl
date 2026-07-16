@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CircleAlert, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { HORIZON_CAUTION } from '../data/forecastReliability';
 
 const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
 const MotionDiv = motion.div;
@@ -266,10 +267,17 @@ function ForecastReasoning({ forecast, apiBase }) {
   );
 }
 
-function KpiCard({ label, price, change, mae }) {
+function KpiCard({ label, price, change, mae, caution }) {
   return (
-    <div className="rounded-card border border-border bg-white p-5 shadow-card">
-      <p className="micro-label text-[10.5px] text-text-muted">{label}</p>
+    <div className={`rounded-card border bg-white p-5 shadow-card ${caution?.level === 'experimental' ? 'border-amber-200' : 'border-border'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="micro-label text-[10.5px] text-text-muted">{label}</p>
+        {caution && (
+          <span className="micro-label rounded-pill bg-amber-50 px-2 py-0.5 text-[8.5px] text-amber-700" title={caution.note}>
+            {caution.badge}
+          </span>
+        )}
+      </div>
       <p className="num mt-3 text-[26px] font-semibold leading-tight text-text-main">₹{formatPrice(price)}</p>
       <div className="num mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]">
         {change != null ? (
@@ -281,6 +289,9 @@ function KpiCard({ label, price, change, mae }) {
         )}
         {mae != null && <span className="text-[11.5px] text-text-muted">±₹{Number(mae).toFixed(0)} typical</span>}
       </div>
+      {caution?.level === 'experimental' && (
+        <p className="mt-2 text-[10.5px] leading-snug text-amber-700/90">{caution.note}</p>
+      )}
     </div>
   );
 }
@@ -430,8 +441,8 @@ export default function ForecastPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <KpiCard label="Current Price" price={forecast?.current_price} change={null} mae={null} />
             <KpiCard label="1-Day Forecast" price={forecast?.forecast?.['1_day']?.price} change={forecast?.forecast?.['1_day']?.change} mae={accuracy?.mae_1d} />
-            <KpiCard label="7-Day Forecast" price={forecast?.forecast?.['7_day']?.price} change={forecast?.forecast?.['7_day']?.change} mae={accuracy?.mae_7d} />
-            <KpiCard label="14-Day Forecast" price={forecast?.forecast?.['14_day']?.price} change={forecast?.forecast?.['14_day']?.change} mae={accuracy?.mae_14d} />
+            <KpiCard label="7-Day Forecast" price={forecast?.forecast?.['7_day']?.price} change={forecast?.forecast?.['7_day']?.change} mae={accuracy?.mae_7d} caution={HORIZON_CAUTION['7d']} />
+            <KpiCard label="14-Day Forecast" price={forecast?.forecast?.['14_day']?.price} change={forecast?.forecast?.['14_day']?.change} mae={accuracy?.mae_14d} caution={HORIZON_CAUTION['14d']} />
 
             {/* Signal card explains itself */}
             <div className={`rounded-card border p-5 ${signal.tint}`}>
