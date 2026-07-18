@@ -173,11 +173,11 @@ function InstrumentCard() {
 }
 
 /* ── Trust strip: source, cadence, accuracy, access ─────────────────── */
-function TrustStrip({ mape }) {
+function TrustStrip() {
   const items = [
     { label: 'Data source', value: 'Official NECC rates', desc: 'All 37 zones, straight from NECC declarations — no scraped estimates.' },
     { label: 'Update cadence', value: 'Twice daily', desc: '06:00 and 14:00 IST, minutes after rates are declared.' },
-    { label: 'Model accuracy', value: mape != null ? `MAPE ${mape}% (30d)` : 'Tracked daily', desc: 'Every forecast shows its typical error in ₹ — nothing is hidden.' },
+    { label: 'Coverage', value: '37 zones · since 2009', desc: 'Full NECC price history behind every forecast — nothing is hidden.' },
     { label: 'Access', value: 'Built for CEFPL operations', desc: 'Portal access is restricted to authorized CEFPL team members.' },
   ];
   return (
@@ -238,14 +238,6 @@ function ModuleRow({ mod }) {
 export default function LandingPage() {
   useOutletContext(); // layout owns auth state
   const reduceMotion = useReducedMotion();
-  const [mape, setMape] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/accuracy`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setMape(d?.mape_1d ?? null))
-      .catch(() => {});
-  }, []);
 
   const slideUp = {
     hidden: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 12 },
@@ -327,7 +319,7 @@ export default function LandingPage() {
       </section>
 
       {/* TRUST STRIP */}
-      <TrustStrip mape={mape} />
+      <TrustStrip />
 
       {/* PLATFORM MODULES */}
       <section id="platform" className="relative flex-1 scroll-mt-24 bg-white px-6 py-20">
