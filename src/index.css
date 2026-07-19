@@ -28,7 +28,7 @@
   --color-forecast: #059669;
 
   /* Restricted tones */
-  --color-navy: #000084; /* logo + utility bar only */
+  --color-navy: #000084; /* logo only */
   --color-badge-blue: #1b61c9; /* informational badges only */
 
   --font-sans: 'IBM Plex Sans', -apple-system, system-ui, sans-serif;
@@ -116,7 +116,7 @@ body {
 }
 .ticker-track {
   display: inline-flex;
-  animation: ticker-crawl 40s linear infinite;
+  animation: ticker-crawl 64s linear infinite;
   will-change: transform;
 }
 .ticker-viewport:hover .ticker-track {

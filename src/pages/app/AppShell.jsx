@@ -30,7 +30,7 @@ function MarketPulse() {
     ]).then(([fc, latest, mats]) => {
       if (!active) return;
       const out = [];
-      const arrow = (v) => (v > 0 ? { a: '▲', c: 'text-emerald-400' } : v < 0 ? { a: '▼', c: 'text-red-400' } : { a: '—', c: 'text-white/40' });
+      const arrow = (v) => (v > 0 ? { a: '▲', c: 'text-positive' } : v < 0 ? { a: '▼', c: 'text-negative' } : { a: '—', c: 'text-text-muted' });
       const hyd = latest?.zones?.find((z) => z.zone === 'Hyderabad');
       if (hyd) out.push({ label: 'NECC HYD', value: `₹${hyd.price.toFixed(0)}`, delta: hyd.change_1d, ...arrow(hyd.change_1d) });
       for (const zn of ['Barwala', 'Namakkal', 'Mumbai (CC)', 'Delhi (CC)']) {
@@ -39,40 +39,42 @@ function MarketPulse() {
       }
       const soy = mats.find((m) => m.material === 'soybean_meal');
       const mz = mats.find((m) => m.material === 'maize');
-      if (soy) out.push({ label: 'SOYA DOC', value: `₹${Number(soy.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-white/50' });
-      if (mz) out.push({ label: 'MAIZE', value: `₹${Number(mz.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-white/50' });
-      if (fc?.signal) out.push({ label: '7D OUTLOOK', value: fc.signal.toUpperCase(), a: '', c: fc.signal === 'bullish' ? 'text-emerald-400' : fc.signal === 'bearish' ? 'text-red-400' : 'text-white/50' });
+      if (soy) out.push({ label: 'SOYA DOC', value: `₹${Number(soy.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-text-muted' });
+      if (mz) out.push({ label: 'MAIZE', value: `₹${Number(mz.price_per_kg).toFixed(1)}/kg`, a: '', c: 'text-text-muted' });
+      if (fc?.signal) out.push({ label: '7D OUTLOOK', value: fc.signal.toUpperCase(), a: '', c: fc.signal === 'bullish' ? 'text-positive' : fc.signal === 'bearish' ? 'text-negative' : 'text-text-muted' });
       setItems(out);
     });
     return () => { active = false; };
   }, []);
 
   const entry = (it, dup) => (
-    <span key={`${it.label}${dup ? '-b' : ''}`} className="mx-4 inline-flex items-center gap-1.5 text-white/60">
-      <span className="font-medium text-white/40">{it.label}</span>
-      <span className="text-white">{it.value}</span>
+    <span key={`${it.label}${dup ? '-b' : ''}`} className="mr-6 inline-flex items-center gap-1.5">
+      <span className="font-semibold text-text-muted">{it.label}</span>
+      <span className="font-semibold text-text-main">{it.value}</span>
       {it.delta != null && <span className={it.c}>{it.a}{Math.abs(it.delta).toFixed(1)}</span>}
     </span>
   );
 
   return (
-    <div className="ticker-viewport num sticky top-0 z-30 flex h-8 items-center overflow-hidden border-b border-white/10 bg-ink text-[11.5px]">
-      <span className="micro-label z-10 flex h-8 shrink-0 items-center gap-2 bg-ink pl-4 pr-5 text-[9.5px] text-white/60">
+    <div className="ticker-viewport num sticky top-0 z-30 flex h-8 items-stretch overflow-hidden border-b border-border bg-bg-alt text-[11px]">
+      <span className="micro-label z-10 flex shrink-0 items-center gap-2 border-r border-border bg-bg-alt pl-4 pr-4 text-[9.5px] text-text-muted">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-positive opacity-50"></span>
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-positive"></span>
         </span>
         Live
       </span>
-      {items ? (
-        <div className="ticker-track h-8 items-center whitespace-nowrap">
-          {items.map((it) => entry(it, false))}
-          {items.map((it) => entry(it, true))}
-        </div>
-      ) : (
-        <span className="flex-1 text-white/35">Loading market data…</span>
-      )}
-      <span className="micro-label z-10 hidden h-8 shrink-0 items-center bg-ink pl-5 pr-4 text-[9.5px] text-white/45 sm:flex">
+      <div className="flex flex-1 items-center overflow-hidden">
+        {items ? (
+          <div className="ticker-track items-center whitespace-nowrap pl-6">
+            {items.map((it) => entry(it, false))}
+            {items.map((it) => entry(it, true))}
+          </div>
+        ) : (
+          <span className="pl-6 text-text-muted">Loading market data…</span>
+        )}
+      </div>
+      <span className="micro-label z-10 hidden shrink-0 items-center border-l border-border bg-bg-alt pl-4 pr-4 text-[9.5px] text-text-muted sm:flex">
         UPD 06:00 IST
       </span>
     </div>

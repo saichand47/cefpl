@@ -6,7 +6,7 @@ import { supabase } from '../supabaseClient';
 const MotionDiv = motion.div;
 const API_BASE = import.meta.env.VITE_EGGSIGHT_API_URL || 'http://localhost:8000';
 
-/* ── Utility bar: navy strip with live NECC ticker crawl ──────────── */
+/* ── Utility bar: paper strip with live NECC ticker crawl ──────────── */
 function UtilityBar() {
   const [items, setItems] = useState(null);
 
@@ -27,11 +27,11 @@ function UtilityBar() {
   }, []);
 
   const entry = (z) => (
-    <span key={z.zone} className="mx-5 inline-flex items-center gap-1.5">
-      <span className="text-white/55">{z.zone.replace(' (CC)', '').replace(' (WB)', '').toUpperCase()}</span>
-      <span className="text-white">₹{Number(z.price).toFixed(0)}</span>
+    <span key={z.zone} className="mr-9 inline-flex items-center gap-1.5">
+      <span className="font-semibold text-text-muted">{z.zone.replace(' (CC)', '').replace(' (WB)', '').toUpperCase()}</span>
+      <span className="font-semibold text-text-main">₹{Number(z.price).toFixed(0)}</span>
       {z.change_1d != null && z.change_1d !== 0 && (
-        <span className={z.change_1d > 0 ? 'text-emerald-300' : 'text-red-300'}>
+        <span className={z.change_1d > 0 ? 'text-positive' : 'text-negative'}>
           {z.change_1d > 0 ? '▲' : '▼'}{Math.abs(z.change_1d).toFixed(1)}
         </span>
       )}
@@ -39,25 +39,25 @@ function UtilityBar() {
   );
 
   return (
-    <div className="ticker-viewport sticky top-0 z-[60] flex h-9 items-center overflow-hidden bg-navy text-[11.5px] num">
-      <span className="micro-label z-10 flex h-9 shrink-0 items-center gap-2 bg-navy pl-5 pr-4 text-[10px] text-white/70">
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+    <div className="ticker-viewport sticky top-0 z-[60] flex h-9 items-stretch overflow-hidden border-b border-border bg-bg-alt text-[11px] num">
+      <span className="micro-label z-10 flex shrink-0 items-center gap-2 border-r border-border bg-bg-alt pl-5 pr-4 text-[10px] text-text-muted">
+        <span className="relative flex h-[7px] w-[7px]">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-positive opacity-50"></span>
+          <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-positive"></span>
         </span>
         NECC Zone Rates · Live
       </span>
-      {items ? (
-        <div className="ticker-track h-9 items-center whitespace-nowrap">
-          {items.map(entry)}
-          {items.map((z) => entry({ ...z, zone: `${z.zone} ` }))}
-        </div>
-      ) : (
-        <div className="flex h-9 flex-1 items-center px-2 text-white/60">
-          UPDATED 2× DAILY · 06:00 / 14:00 IST
-        </div>
-      )}
-      <Link to="/forecast" className="micro-label z-10 hidden h-9 shrink-0 items-center bg-navy pl-4 pr-5 text-[10px] text-white/70 hover:text-white sm:flex">
+      <div className="flex flex-1 items-center overflow-hidden">
+        {items ? (
+          <div className="ticker-track items-center whitespace-nowrap pl-5">
+            {items.map(entry)}
+            {items.map((z) => entry({ ...z, zone: `${z.zone} ` }))}
+          </div>
+        ) : (
+          <span className="px-5 text-text-muted">UPDATED 2× DAILY · 06:00 / 14:00 IST</span>
+        )}
+      </div>
+      <Link to="/forecast" className="z-10 hidden shrink-0 items-center border-l border-border bg-bg-alt pl-4 pr-5 text-[11.5px] font-semibold text-accent hover:text-accent-hover sm:flex">
         Full forecast →
       </Link>
     </div>
